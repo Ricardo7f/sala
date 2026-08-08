@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sala de Reunião — Calendário</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="dash-body">
+
+  <header class="topbar">
+    <div class="topbar-brand">
+      <span class="pin-dot"></span>
+      <span>Sala de Reunião</span>
+    </div>
+    <div class="topbar-user">
+      <span id="user-nome">—</span>
+      <button id="btn-sair" class="btn btn-ghost">Sair</button>
+    </div>
+  </header>
+
+  <main class="dash-wrap">
+
+    <section class="card minha-reserva" id="minha-reserva">
+      <!-- preenchido via JS -->
+    </section>
+
+    <section class="card calendario-card">
+      <div class="cal-header">
+        <button id="mes-anterior" class="btn btn-ghost" aria-label="Mês anterior">‹</button>
+        <h2 id="mes-atual" class="cal-titulo">—</h2>
+        <button id="mes-seguinte" class="btn btn-ghost" aria-label="Próximo mês">›</button>
+      </div>
+
+      <div class="cal-legenda">
+        <span><i class="dot dot-livre"></i> livre</span>
+        <span><i class="dot dot-parcial"></i> parcial</span>
+        <span><i class="dot dot-cheio"></i> lotada</span>
+      </div>
+
+      <div class="cal-dias-semana">
+        <span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span>
+      </div>
+
+      <div class="cal-grid" id="cal-grid">
+        <!-- dias gerados via JS -->
+      </div>
+    </section>
+
+    <section class="card slots-card is-hidden" id="slots-card">
+      <div class="slots-header">
+        <h3 id="slots-titulo">Horários — —</h3>
+        <button id="fechar-slots" class="btn btn-ghost">Fechar</button>
+      </div>
+      <p class="slots-hint">Toque nos horários seguidos que você quer reservar (ex: 9h e 10h = reserva das 9h às 11h).</p>
+      <div class="slots-grid" id="slots-grid"></div>
+      <button id="btn-confirmar" class="btn btn-primary" disabled>Confirmar reserva</button>
+      <p class="form-msg" id="slots-msg" role="alert"></p>
+    </section>
+
+  </main>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>

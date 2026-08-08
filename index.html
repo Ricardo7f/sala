@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sala de Reunião — Acesso</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="auth-body">
+
+  <main class="auth-wrap">
+    <div class="plaque">
+      <div class="plaque-pin"></div>
+      <h1 class="plaque-title">Sala de Reunião</h1>
+      <p class="plaque-sub">Reserve o seu horário</p>
+    </div>
+
+    <div class="card auth-card">
+      <div class="tabs" role="tablist">
+        <button class="tab is-active" id="tab-login" role="tab" aria-selected="true">Entrar</button>
+        <button class="tab" id="tab-cadastro" role="tab" aria-selected="false">Cadastrar</button>
+      </div>
+
+      <!-- FORM LOGIN -->
+      <form id="form-login" class="auth-form" autocomplete="on">
+        <label class="field">
+          <span>E-mail</span>
+          <input type="email" id="login-email" required placeholder="voce@empresa.com">
+        </label>
+        <label class="field">
+          <span>Senha</span>
+          <input type="password" id="login-senha" required placeholder="••••••••" minlength="6">
+        </label>
+        <button type="submit" class="btn btn-primary">Entrar</button>
+        <p class="form-msg" id="login-msg" role="alert"></p>
+      </form>
+
+      <!-- FORM CADASTRO -->
+      <form id="form-cadastro" class="auth-form is-hidden" autocomplete="on">
+        <label class="field">
+          <span>Nome</span>
+          <input type="text" id="cad-nome" required placeholder="Seu nome">
+        </label>
+        <label class="field">
+          <span>E-mail</span>
+          <input type="email" id="cad-email" required placeholder="voce@empresa.com">
+        </label>
+        <label class="field">
+          <span>Senha</span>
+          <input type="password" id="cad-senha" required placeholder="Mínimo 6 caracteres" minlength="6">
+        </label>
+        <button type="submit" class="btn btn-primary">Criar conta</button>
+        <p class="form-msg" id="cadastro-msg" role="alert"></p>
+      </form>
+    </div>
+  </main>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/auth.js"></script>
+</body>
+</html>
