@@ -3,13 +3,149 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sala de Reunião — Acesso</title>
+<title>Sala de Reunião</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css">
-</head>
-<body class="auth-body">
 
+<style>
+/* ============================================================
+   TOKENS
+   ============================================================ */
+:root {
+  --ink: #16233B;
+  --ink-soft: #3B4A66;
+  --paper: #EDEFE9;
+  --surface: #FFFFFF;
+  --brass: #B08D57;
+  --brass-dark: #8C6E3F;
+  --livre: #3F7A5C;
+  --livre-bg: #E4EFE8;
+  --parcial: #B08D57;
+  --parcial-bg: #F3EADB;
+  --ocupado: #A8432E;
+  --ocupado-bg: #F5E4DE;
+  --border: #DCD9CC;
+  --radius: 10px;
+  --font-display: "Fraunces", serif;
+  --font-body: "Inter", sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--ink);
+  background: var(--paper);
+  -webkit-font-smoothing: antialiased;
+}
+button { font-family: inherit; cursor: pointer; }
+button:disabled { cursor: not-allowed; }
+:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+.is-hidden { display: none !important; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  border-top: 3px solid var(--brass);
+  padding: 24px;
+}
+.btn { border: none; border-radius: 8px; padding: 12px 20px; font-weight: 600; font-size: 0.95rem; transition: transform .08s ease, opacity .15s ease; }
+.btn:active { transform: scale(0.98); }
+.btn-primary { background: var(--ink); color: #fff; width: 100%; }
+.btn-primary:disabled { opacity: 0.4; }
+.btn-primary:hover:not(:disabled) { background: var(--ink-soft); }
+.btn-ghost { background: transparent; color: var(--ink-soft); border: 1px solid var(--border); }
+.btn-ghost:hover { border-color: var(--brass); color: var(--ink); }
+.btn-secundario { background: var(--ocupado-bg); color: var(--ocupado); border: 1px solid var(--ocupado); width: 100%; margin-top: 12px; }
+.form-msg { min-height: 20px; font-size: 0.85rem; margin: 8px 0 0; }
+.form-msg.is-erro { color: var(--ocupado); }
+.form-msg.is-ok { color: var(--livre); }
+
+/* AUTH */
+.auth-body { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+.auth-wrap { width: 100%; max-width: 400px; }
+.plaque { text-align: center; background: var(--ink); color: #fff; border-radius: var(--radius) var(--radius) 0 0; padding: 32px 24px 24px; position: relative; }
+.plaque-pin { width: 10px; height: 10px; background: var(--brass); border-radius: 50%; margin: 0 auto 14px; }
+.plaque-title { font-family: var(--font-display); font-weight: 600; font-size: 1.6rem; margin: 0; letter-spacing: 0.02em; }
+.plaque-sub { font-family: var(--font-mono); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--brass); margin: 8px 0 0; }
+.auth-card { border-radius: 0 0 var(--radius) var(--radius); border-top: none; }
+.tabs { display: flex; gap: 4px; margin-bottom: 20px; background: var(--paper); border-radius: 8px; padding: 4px; }
+.tab { flex: 1; background: transparent; border: none; padding: 10px; border-radius: 6px; font-weight: 600; color: var(--ink-soft); }
+.tab.is-active { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+.auth-form.is-hidden { display: none; }
+.field { display: block; margin-bottom: 14px; }
+.field span { display: block; font-size: 0.8rem; font-weight: 600; color: var(--ink-soft); margin-bottom: 6px; }
+.field input { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.95rem; font-family: inherit; background: var(--paper); }
+.field input:focus { border-color: var(--brass); background: var(--surface); }
+
+/* DASHBOARD */
+.topbar { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; background: var(--ink); color: #fff; }
+.topbar-brand { font-family: var(--font-display); font-weight: 600; display: flex; align-items: center; gap: 10px; }
+.pin-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--brass); display: inline-block; }
+.topbar-user { display: flex; align-items: center; gap: 14px; font-size: 0.9rem; }
+.topbar-user .btn-ghost { color: #fff; border-color: rgba(255,255,255,0.3); padding: 8px 14px; }
+.dash-wrap { max-width: 640px; margin: 0 auto; padding: 24px 16px 80px; display: flex; flex-direction: column; gap: 20px; }
+
+.minha-reserva-vazia { margin: 0; color: var(--ink-soft); }
+.reserva-atual-info { display: flex; flex-direction: column; gap: 2px; }
+.reserva-atual-label { font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--brass-dark); }
+.reserva-atual-data { font-family: var(--font-display); font-size: 1.4rem; font-weight: 600; }
+.reserva-atual-horarios { font-family: var(--font-mono); color: var(--ink-soft); }
+.reserva-atual-aviso { font-size: 0.85rem; color: var(--ink-soft); margin: 12px 0 0; }
+
+.cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.cal-titulo { font-family: var(--font-display); font-weight: 600; font-size: 1.15rem; margin: 0; }
+.cal-header .btn-ghost { width: 34px; height: 34px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
+.cal-legenda { display: flex; gap: 16px; font-size: 0.78rem; color: var(--ink-soft); margin: 10px 0 16px; }
+.cal-legenda span { display: flex; align-items: center; gap: 6px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.dot-livre { background: var(--livre); }
+.dot-parcial { background: var(--parcial); }
+.dot-cheio { background: var(--ocupado); }
+.cal-dias-semana { display: grid; grid-template-columns: repeat(7, 1fr); font-family: var(--font-mono); font-size: 0.7rem; text-align: center; color: var(--ink-soft); margin-bottom: 6px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.cal-dia { aspect-ratio: 1; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-family: var(--font-body); font-weight: 600; font-size: 0.9rem; color: var(--ink); }
+.cal-dia-vazio { border: none; background: transparent; }
+.cal-dia-gauge { width: 60%; height: 3px; border-radius: 2px; background: var(--border); }
+.cal-dia.status-livre .cal-dia-gauge { background: var(--livre); }
+.cal-dia.status-parcial .cal-dia-gauge { background: var(--parcial); }
+.cal-dia.status-cheio .cal-dia-gauge { background: var(--ocupado); }
+.cal-dia.status-cheio { background: var(--ocupado-bg); color: var(--ocupado); border-color: var(--ocupado); opacity: 0.7; }
+.cal-dia.is-passado { opacity: 0.3; }
+.cal-dia.is-hoje { border-color: var(--brass); border-width: 2px; }
+.cal-dia:disabled { cursor: not-allowed; }
+.cal-dia:not(:disabled):hover { border-color: var(--brass); transform: translateY(-1px); }
+
+.slots-card.is-hidden { display: none; }
+.slots-header { display: flex; align-items: center; justify-content: space-between; }
+.slots-header h3 { font-family: var(--font-display); font-size: 1.1rem; margin: 0; }
+.slots-hint { font-size: 0.82rem; color: var(--ink-soft); margin: 8px 0 16px; }
+.slots-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 16px; }
+.slot { border: 1px solid var(--border); border-radius: 8px; background: var(--livre-bg); padding: 12px; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; transition: all .12s ease; }
+.slot-hora { font-family: var(--font-mono); font-weight: 600; font-size: 0.95rem; }
+.slot-status { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--livre); }
+.slot:not(:disabled):hover { border-color: var(--livre); }
+.slot-selecionado { background: var(--ink); border-color: var(--ink); }
+.slot-selecionado .slot-hora, .slot-selecionado .slot-status { color: #fff; }
+.slot-ocupado { background: var(--ocupado-bg); }
+.slot-ocupado .slot-status { color: var(--ocupado); }
+.slot-meu { background: var(--parcial-bg); border-color: var(--parcial); }
+.slot-meu .slot-status { color: var(--brass-dark); }
+.slot:disabled { opacity: 0.7; }
+
+@media (max-width: 420px) {
+  .slots-grid { grid-template-columns: 1fr 1fr; }
+  .cal-dia-num { font-size: 0.82rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     TELA 1 — LOGIN / CADASTRO
+     ============================================================ -->
+<div id="tela-auth" class="auth-body">
   <main class="auth-wrap">
     <div class="plaque">
       <div class="plaque-pin"></div>
@@ -23,32 +159,25 @@
         <button class="tab" id="tab-cadastro" role="tab" aria-selected="false">Cadastrar</button>
       </div>
 
-      <!-- FORM LOGIN -->
       <form id="form-login" class="auth-form" autocomplete="on">
-        <label class="field">
-          <span>E-mail</span>
+        <label class="field"><span>E-mail</span>
           <input type="email" id="login-email" required placeholder="voce@empresa.com">
         </label>
-        <label class="field">
-          <span>Senha</span>
+        <label class="field"><span>Senha</span>
           <input type="password" id="login-senha" required placeholder="••••••••" minlength="6">
         </label>
         <button type="submit" class="btn btn-primary">Entrar</button>
         <p class="form-msg" id="login-msg" role="alert"></p>
       </form>
 
-      <!-- FORM CADASTRO -->
       <form id="form-cadastro" class="auth-form is-hidden" autocomplete="on">
-        <label class="field">
-          <span>Nome</span>
+        <label class="field"><span>Nome</span>
           <input type="text" id="cad-nome" required placeholder="Seu nome">
         </label>
-        <label class="field">
-          <span>E-mail</span>
+        <label class="field"><span>E-mail</span>
           <input type="email" id="cad-email" required placeholder="voce@empresa.com">
         </label>
-        <label class="field">
-          <span>Senha</span>
+        <label class="field"><span>Senha</span>
           <input type="password" id="cad-senha" required placeholder="Mínimo 6 caracteres" minlength="6">
         </label>
         <button type="submit" class="btn btn-primary">Criar conta</button>
@@ -56,11 +185,412 @@
       </form>
     </div>
   </main>
+</div>
 
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-  <script src="js/firebase-config.js"></script>
-  <script src="js/auth.js"></script>
+<!-- ============================================================
+     TELA 2 — CALENDÁRIO / DASHBOARD
+     ============================================================ -->
+<div id="tela-dashboard" class="is-hidden">
+  <header class="topbar">
+    <div class="topbar-brand"><span class="pin-dot"></span><span>Sala de Reunião</span></div>
+    <div class="topbar-user">
+      <span id="user-nome">—</span>
+      <button id="btn-sair" class="btn btn-ghost">Sair</button>
+    </div>
+  </header>
+
+  <main class="dash-wrap">
+    <section class="card minha-reserva" id="minha-reserva"></section>
+
+    <section class="card calendario-card">
+      <div class="cal-header">
+        <button id="mes-anterior" class="btn btn-ghost" aria-label="Mês anterior">‹</button>
+        <h2 id="mes-atual" class="cal-titulo">—</h2>
+        <button id="mes-seguinte" class="btn btn-ghost" aria-label="Próximo mês">›</button>
+      </div>
+      <div class="cal-legenda">
+        <span><i class="dot dot-livre"></i> livre</span>
+        <span><i class="dot dot-parcial"></i> parcial</span>
+        <span><i class="dot dot-cheio"></i> lotada</span>
+      </div>
+      <div class="cal-dias-semana"><span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div>
+      <div class="cal-grid" id="cal-grid"></div>
+    </section>
+
+    <section class="card slots-card is-hidden" id="slots-card">
+      <div class="slots-header">
+        <h3 id="slots-titulo">Horários — —</h3>
+        <button id="fechar-slots" class="btn btn-ghost">Fechar</button>
+      </div>
+      <p class="slots-hint">Toque nos horários seguidos que você quer reservar (ex: 9h e 10h = reserva das 9h às 11h).</p>
+      <div class="slots-grid" id="slots-grid"></div>
+      <button id="btn-confirmar" class="btn btn-primary" disabled>Confirmar reserva</button>
+      <p class="form-msg" id="slots-msg" role="alert"></p>
+    </section>
+  </main>
+</div>
+
+<!-- ============================================================
+     FIREBASE SDK
+     ============================================================ -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<script>
+// ============================================================
+// CONFIGURAÇÃO DO FIREBASE
+// ============================================================
+// 1. Crie um projeto em https://console.firebase.google.com
+// 2. Configurações do projeto > Seus aplicativos > ícone </> (Web) > registre o app
+// 3. Copie o objeto abaixo com os valores reais do SEU projeto
+// 4. Ative Authentication > método E-mail/senha
+// 5. Ative Firestore Database e aplique as regras do arquivo firestore.rules
+// ============================================================
+const firebaseConfig = {
+  apiKey: "SUA_API_KEY_AQUI",
+  authDomain: "seu-projeto.firebaseapp.com",
+  projectId: "seu-projeto",
+  storageBucket: "seu-projeto.appspot.com",
+  messagingSenderId: "000000000000",
+  appId: "1:000000000000:web:xxxxxxxxxxxxxxxxxx"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+// Horário de funcionamento da sala (blocos de 1h)
+const HORARIO_INICIO = 7;
+const HORARIO_FIM = 18;
+
+// ============================================================
+// CONTROLE DE TELAS
+// ============================================================
+const telaAuth = document.getElementById("tela-auth");
+const telaDashboard = document.getElementById("tela-dashboard");
+
+function mostrarTelaAuth() {
+  telaAuth.classList.remove("is-hidden");
+  telaDashboard.classList.add("is-hidden");
+}
+function mostrarTelaDashboard() {
+  telaDashboard.classList.remove("is-hidden");
+  telaAuth.classList.add("is-hidden");
+}
+
+let usuarioAtual = null;
+
+auth.onAuthStateChanged((user) => {
+  if (user) {
+    usuarioAtual = user;
+    document.getElementById("user-nome").textContent = user.displayName || user.email;
+    mostrarTelaDashboard();
+    carregarMinhaReserva();
+    renderizarCalendario();
+  } else {
+    usuarioAtual = null;
+    mostrarTelaAuth();
+  }
+});
+
+document.getElementById("btn-sair").addEventListener("click", () => auth.signOut());
+
+// ============================================================
+// LOGIN / CADASTRO
+// ============================================================
+const tabLogin = document.getElementById("tab-login");
+const tabCadastro = document.getElementById("tab-cadastro");
+const formLogin = document.getElementById("form-login");
+const formCadastro = document.getElementById("form-cadastro");
+
+function mostrarLogin() {
+  tabLogin.classList.add("is-active"); tabCadastro.classList.remove("is-active");
+  tabLogin.setAttribute("aria-selected", "true"); tabCadastro.setAttribute("aria-selected", "false");
+  formLogin.classList.remove("is-hidden"); formCadastro.classList.add("is-hidden");
+}
+function mostrarCadastro() {
+  tabCadastro.classList.add("is-active"); tabLogin.classList.remove("is-active");
+  tabCadastro.setAttribute("aria-selected", "true"); tabLogin.setAttribute("aria-selected", "false");
+  formCadastro.classList.remove("is-hidden"); formLogin.classList.add("is-hidden");
+}
+tabLogin.addEventListener("click", mostrarLogin);
+tabCadastro.addEventListener("click", mostrarCadastro);
+
+function traduzirErro(codigo) {
+  const mapa = {
+    "auth/email-already-in-use": "Este e-mail já possui cadastro. Faça login.",
+    "auth/invalid-email": "E-mail inválido.",
+    "auth/user-not-found": "E-mail ou senha incorretos.",
+    "auth/wrong-password": "E-mail ou senha incorretos.",
+    "auth/invalid-credential": "E-mail ou senha incorretos.",
+    "auth/weak-password": "A senha precisa ter no mínimo 6 caracteres.",
+    "auth/too-many-requests": "Muitas tentativas. Aguarde um instante e tente novamente."
+  };
+  return mapa[codigo] || "Não foi possível concluir. Tente novamente.";
+}
+function mostrarMsg(el, texto, tipo) {
+  el.textContent = texto;
+  el.className = "form-msg " + (tipo === "erro" ? "is-erro" : "is-ok");
+}
+
+formLogin.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const msg = document.getElementById("login-msg");
+  const email = document.getElementById("login-email").value.trim();
+  const senha = document.getElementById("login-senha").value;
+  const btn = formLogin.querySelector("button");
+  btn.disabled = true;
+  mostrarMsg(msg, "Entrando...", "ok");
+  try {
+    await auth.signInWithEmailAndPassword(email, senha);
+  } catch (err) {
+    mostrarMsg(msg, traduzirErro(err.code), "erro");
+    btn.disabled = false;
+  }
+});
+
+formCadastro.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const msg = document.getElementById("cadastro-msg");
+  const nome = document.getElementById("cad-nome").value.trim();
+  const email = document.getElementById("cad-email").value.trim();
+  const senha = document.getElementById("cad-senha").value;
+  const btn = formCadastro.querySelector("button");
+  btn.disabled = true;
+  mostrarMsg(msg, "Criando conta...", "ok");
+  try {
+    const cred = await auth.createUserWithEmailAndPassword(email, senha);
+    await cred.user.updateProfile({ displayName: nome });
+    await db.collection("usuarios").doc(cred.user.uid).set({
+      nome: nome, email: email, criadoEm: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  } catch (err) {
+    mostrarMsg(msg, traduzirErro(err.code), "erro");
+    btn.disabled = false;
+    if (err.code === "auth/email-already-in-use") setTimeout(mostrarLogin, 1200);
+  }
+});
+
+// ============================================================
+// CALENDÁRIO E RESERVAS
+// ============================================================
+let mesExibido = new Date(); mesExibido.setDate(1);
+let diaSelecionado = null;
+let horariosOcupadosDoDia = [];
+let horariosSelecionados = [];
+
+function paraChaveData(date) {
+  const y = date.getFullYear(), m = String(date.getMonth()+1).padStart(2,"0"), d = String(date.getDate()).padStart(2,"0");
+  return `${y}-${m}-${d}`;
+}
+function hojeChave() { return paraChaveData(new Date()); }
+function formatarDataBR(chave) { const [y,m,d] = chave.split("-"); return `${d}/${m}/${y}`; }
+const NOMES_MES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+
+async function buscarReservasDoUsuario() {
+  const snap = await db.collection("bookings").where("userId", "==", usuarioAtual.uid).get();
+  return snap.docs.map(d => d.data());
+}
+async function obterDiaTravado() {
+  const minhas = await buscarReservasDoUsuario();
+  const hoje = hojeChave();
+  const futuras = minhas.filter(r => r.date >= hoje);
+  if (futuras.length === 0) return null;
+  return futuras[0].date;
+}
+
+async function carregarMinhaReserva() {
+  const box = document.getElementById("minha-reserva");
+  const diaTravado = await obterDiaTravado();
+  if (!diaTravado) {
+    box.innerHTML = `<p class="minha-reserva-vazia">Você ainda não tem nenhuma sala marcada. Escolha um dia no calendário abaixo.</p>`;
+    return;
+  }
+  const minhas = (await buscarReservasDoUsuario()).filter(r => r.date === diaTravado).sort((a,b) => a.hour - b.hour);
+  const horariosTxt = minhas.map(r => `${String(r.hour).padStart(2,"0")}h–${String(r.hour+1).padStart(2,"0")}h`).join(", ");
+  box.innerHTML = `
+    <div class="reserva-atual">
+      <div class="reserva-atual-info">
+        <span class="reserva-atual-label">Sua sala reservada</span>
+        <span class="reserva-atual-data">${formatarDataBR(diaTravado)}</span>
+        <span class="reserva-atual-horarios">${horariosTxt}</span>
+      </div>
+      <p class="reserva-atual-aviso">Você pode adicionar mais horários neste mesmo dia. Só poderá marcar <strong>outro dia</strong> depois que esta data passar.</p>
+      <button class="btn btn-secundario" id="btn-cancelar-tudo">Cancelar todas as reservas deste dia</button>
+    </div>`;
+  document.getElementById("btn-cancelar-tudo").addEventListener("click", () => cancelarReservasDoDia(diaTravado));
+}
+
+async function cancelarReservasDoDia(chaveData) {
+  if (!confirm(`Cancelar todas as suas reservas do dia ${formatarDataBR(chaveData)}?`)) return;
+  const snap = await db.collection("bookings").where("userId", "==", usuarioAtual.uid).where("date", "==", chaveData).get();
+  const batch = db.batch();
+  snap.docs.forEach(doc => batch.delete(doc.ref));
+  await batch.commit();
+  await carregarMinhaReserva();
+  if (diaSelecionado === chaveData) abrirDia(chaveData);
+  await renderizarCalendario();
+}
+
+document.getElementById("mes-anterior").addEventListener("click", () => {
+  const hoje = new Date(); hoje.setDate(1); hoje.setHours(0,0,0,0);
+  const alvo = new Date(mesExibido); alvo.setMonth(alvo.getMonth() - 1);
+  if (alvo < hoje) return;
+  mesExibido = alvo;
+  renderizarCalendario();
+});
+document.getElementById("mes-seguinte").addEventListener("click", () => {
+  mesExibido.setMonth(mesExibido.getMonth() + 1);
+  renderizarCalendario();
+});
+
+async function renderizarCalendario() {
+  document.getElementById("mes-atual").textContent = `${NOMES_MES[mesExibido.getMonth()]} ${mesExibido.getFullYear()}`;
+  const primeiroDia = new Date(mesExibido.getFullYear(), mesExibido.getMonth(), 1);
+  const ultimoDia = new Date(mesExibido.getFullYear(), mesExibido.getMonth() + 1, 0);
+  const chaveInicio = paraChaveData(primeiroDia);
+  const chaveFim = paraChaveData(ultimoDia);
+
+  const snap = await db.collection("bookings").where("date", ">=", chaveInicio).where("date", "<=", chaveFim).get();
+  const ocupacaoPorDia = {};
+  snap.docs.forEach(doc => {
+    const data = doc.data();
+    ocupacaoPorDia[data.date] = (ocupacaoPorDia[data.date] || 0) + 1;
+  });
+
+  const totalSlots = HORARIO_FIM - HORARIO_INICIO;
+  const grid = document.getElementById("cal-grid");
+  grid.innerHTML = "";
+  for (let i = 0; i < primeiroDia.getDay(); i++) grid.appendChild(criarCelulaVazia());
+
+  const hoje = hojeChave();
+  for (let dia = 1; dia <= ultimoDia.getDate(); dia++) {
+    const dataObj = new Date(mesExibido.getFullYear(), mesExibido.getMonth(), dia);
+    const chave = paraChaveData(dataObj);
+    const ocupados = ocupacaoPorDia[chave] || 0;
+    const isPassado = chave < hoje;
+    const lotado = ocupados >= totalSlots;
+    let status = "livre";
+    if (ocupados > 0 && !lotado) status = "parcial";
+    if (lotado) status = "cheio";
+    grid.appendChild(criarCelulaDia(dia, chave, status, isPassado));
+  }
+}
+
+function criarCelulaVazia() {
+  const el = document.createElement("div");
+  el.className = "cal-dia cal-dia-vazio";
+  return el;
+}
+function criarCelulaDia(numero, chave, status, isPassado) {
+  const el = document.createElement("button");
+  el.className = `cal-dia status-${status}`;
+  if (isPassado) el.classList.add("is-passado");
+  if (chave === hojeChave()) el.classList.add("is-hoje");
+  el.disabled = isPassado || status === "cheio";
+  el.innerHTML = `<span class="cal-dia-num">${numero}</span><span class="cal-dia-gauge"></span>`;
+  el.addEventListener("click", () => abrirDia(chave));
+  return el;
+}
+
+const slotsCard = document.getElementById("slots-card");
+const slotsGrid = document.getElementById("slots-grid");
+const slotsMsg = document.getElementById("slots-msg");
+const btnConfirmar = document.getElementById("btn-confirmar");
+
+document.getElementById("fechar-slots").addEventListener("click", () => {
+  slotsCard.classList.add("is-hidden");
+  diaSelecionado = null;
+});
+
+async function abrirDia(chave) {
+  diaSelecionado = chave;
+  horariosSelecionados = [];
+  slotsMsg.textContent = "";
+  document.getElementById("slots-titulo").textContent = `Horários — ${formatarDataBR(chave)}`;
+  slotsCard.classList.remove("is-hidden");
+  slotsCard.scrollIntoView({ behavior: "smooth", block: "start" });
+
+  const snap = await db.collection("bookings").where("date", "==", chave).get();
+  horariosOcupadosDoDia = snap.docs.map(d => d.data().hour);
+  const meusNoDia = snap.docs.filter(d => d.data().userId === usuarioAtual.uid).map(d => d.data().hour);
+
+  const diaTravado = await obterDiaTravado();
+  const bloqueadoPorOutroDia = diaTravado && diaTravado !== chave;
+
+  renderizarSlots(chave, meusNoDia, bloqueadoPorOutroDia, diaTravado);
+}
+
+function renderizarSlots(chave, meusNoDia, bloqueadoPorOutroDia, diaTravado) {
+  slotsGrid.innerHTML = "";
+  for (let h = HORARIO_INICIO; h < HORARIO_FIM; h++) {
+    const ocupado = horariosOcupadosDoDia.includes(h);
+    const meu = meusNoDia.includes(h);
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "slot";
+    if (ocupado && !meu) btn.classList.add("slot-ocupado");
+    if (meu) btn.classList.add("slot-meu");
+    btn.disabled = (ocupado && !meu) || bloqueadoPorOutroDia;
+    btn.innerHTML = `
+      <span class="slot-hora">${String(h).padStart(2,"0")}h–${String(h+1).padStart(2,"0")}h</span>
+      <span class="slot-status">${meu ? "sua reserva" : (ocupado ? "ocupado" : "livre")}</span>`;
+    if (!ocupado && !bloqueadoPorOutroDia) btn.addEventListener("click", () => alternarSelecao(h, btn));
+    slotsGrid.appendChild(btn);
+  }
+  if (bloqueadoPorOutroDia) {
+    slotsMsg.className = "form-msg is-erro";
+    slotsMsg.textContent = `Você já tem a sala reservada para ${formatarDataBR(diaTravado)}. Só poderá marcar este dia depois que ${formatarDataBR(diaTravado)} passar.`;
+  }
+  btnConfirmar.disabled = true;
+}
+
+function alternarSelecao(h, btn) {
+  const idx = horariosSelecionados.indexOf(h);
+  if (idx >= 0) { horariosSelecionados.splice(idx, 1); btn.classList.remove("slot-selecionado"); }
+  else { horariosSelecionados.push(h); btn.classList.add("slot-selecionado"); }
+  btnConfirmar.disabled = horariosSelecionados.length === 0;
+  slotsMsg.textContent = "";
+}
+
+btnConfirmar.addEventListener("click", async () => {
+  if (horariosSelecionados.length === 0 || !diaSelecionado) return;
+  btnConfirmar.disabled = true;
+  slotsMsg.className = "form-msg";
+  slotsMsg.textContent = "Confirmando...";
+  try {
+    const diaTravado = await obterDiaTravado();
+    if (diaTravado && diaTravado !== diaSelecionado) {
+      throw new Error(`Você já tem a sala reservada para ${formatarDataBR(diaTravado)}. Aguarde essa data passar.`);
+    }
+    await db.runTransaction(async (tx) => {
+      const refs = horariosSelecionados.map(h => db.collection("bookings").doc(`${diaSelecionado}_${h}`));
+      const snaps = await Promise.all(refs.map(ref => tx.get(ref)));
+      snaps.forEach((snap, i) => {
+        if (snap.exists) throw new Error(`O horário ${String(horariosSelecionados[i]).padStart(2,"0")}h acabou de ser reservado por outra pessoa. Escolha outro.`);
+      });
+      refs.forEach((ref, i) => {
+        tx.set(ref, {
+          date: diaSelecionado,
+          hour: horariosSelecionados[i],
+          userId: usuarioAtual.uid,
+          userEmail: usuarioAtual.email,
+          userNome: usuarioAtual.displayName || usuarioAtual.email,
+          criadoEm: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      });
+    });
+    slotsMsg.className = "form-msg is-ok";
+    slotsMsg.textContent = "Reserva confirmada!";
+    await carregarMinhaReserva();
+    await renderizarCalendario();
+    await abrirDia(diaSelecionado);
+  } catch (err) {
+    slotsMsg.className = "form-msg is-erro";
+    slotsMsg.textContent = err.message || "Não foi possível confirmar. Tente novamente.";
+    btnConfirmar.disabled = false;
+  }
+});
+</script>
 </body>
 </html>
