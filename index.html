@@ -80,6 +80,15 @@ button:disabled { cursor: not-allowed; }
 .topbar-user { display: flex; align-items: center; gap: 14px; font-size: 0.9rem; }
 .topbar-user .btn-ghost { padding: 8px 14px; }
 .dash-wrap { max-width: 640px; margin: 0 auto; padding: 24px 16px 80px; display: flex; flex-direction: column; gap: 16px; }
+.cal-slots-row { display: flex; flex-direction: column; gap: 16px; }
+
+@media (min-width: 900px) {
+  .dash-wrap { max-width: 1120px; }
+  .cal-slots-row { display: grid; grid-template-columns: minmax(340px, 420px) 1fr; align-items: start; gap: 20px; }
+  .cal-slots-row .calendario-card { position: sticky; top: 88px; }
+  .slots-grid { max-height: 60vh; }
+}
+
 
 .minha-reserva-vazia { margin: 0; color: var(--ink-soft); }
 .reserva-atual { padding-bottom: 16px; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
@@ -240,31 +249,33 @@ button:disabled { cursor: not-allowed; }
       <div id="solicitacoes-enviadas-lista"></div>
     </section>
 
-    <section class="card calendario-card">
-      <div class="cal-header">
-        <button id="mes-anterior" class="btn btn-ghost" aria-label="Mês anterior">‹</button>
-        <h2 id="mes-atual" class="cal-titulo">—</h2>
-        <button id="mes-seguinte" class="btn btn-ghost" aria-label="Próximo mês">›</button>
-      </div>
-      <div class="cal-legenda">
-        <span><i class="dot dot-livre"></i> livre</span>
-        <span><i class="dot dot-parcial"></i> parcial</span>
-        <span><i class="dot dot-cheio"></i> lotada</span>
-      </div>
-      <div class="cal-dias-semana"><span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div>
-      <div class="cal-grid" id="cal-grid"></div>
-    </section>
+    <div class="cal-slots-row">
+      <section class="card calendario-card">
+        <div class="cal-header">
+          <button id="mes-anterior" class="btn btn-ghost" aria-label="Mês anterior">‹</button>
+          <h2 id="mes-atual" class="cal-titulo">—</h2>
+          <button id="mes-seguinte" class="btn btn-ghost" aria-label="Próximo mês">›</button>
+        </div>
+        <div class="cal-legenda">
+          <span><i class="dot dot-livre"></i> livre</span>
+          <span><i class="dot dot-parcial"></i> parcial</span>
+          <span><i class="dot dot-cheio"></i> lotada</span>
+        </div>
+        <div class="cal-dias-semana"><span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div>
+        <div class="cal-grid" id="cal-grid"></div>
+      </section>
 
-    <section class="card slots-card is-hidden" id="slots-card">
-      <div class="slots-header">
-        <h3 id="slots-titulo">Horários — —</h3>
-        <button id="fechar-slots" class="btn btn-ghost">Fechar</button>
-      </div>
+      <section class="card slots-card is-hidden" id="slots-card">
+        <div class="slots-header">
+          <h3 id="slots-titulo">Horários — —</h3>
+          <button id="fechar-slots" class="btn btn-ghost">Fechar</button>
+        </div>
 
-      <div class="slots-grid" id="slots-grid"></div>
-      <button id="btn-confirmar" class="btn btn-primary" disabled>Confirmar reserva</button>
-      <p class="form-msg" id="slots-msg" role="alert"></p>
-    </section>
+        <div class="slots-grid" id="slots-grid"></div>
+        <button id="btn-confirmar" class="btn btn-primary" disabled>Confirmar reserva</button>
+        <p class="form-msg" id="slots-msg" role="alert"></p>
+      </section>
+    </div>
   </main>
 </div>
 
