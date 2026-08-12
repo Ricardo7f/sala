@@ -283,6 +283,21 @@ button:disabled { cursor: not-allowed; }
   </div>
 </div>
 
+<div id="modal-recusa-overlay" class="modal-overlay is-hidden">
+  <div class="card modal-card">
+    <h3>Recusar pedido</h3>
+    <p class="modal-info" id="modal-recusa-info"></p>
+    <label class="field"><span>Motivo da recusa (opcional)</span>
+      <textarea id="modal-recusa-motivo" rows="4" placeholder="Ex: já tenho outro compromisso nesse horário..."></textarea>
+    </label>
+    <p class="form-msg" id="modal-recusa-msg" role="alert"></p>
+    <div class="modal-actions">
+      <button type="button" id="modal-recusa-cancelar" class="btn btn-ghost">Voltar</button>
+      <button type="button" id="modal-recusa-enviar" class="btn btn-secundario">Recusar pedido</button>
+    </div>
+  </div>
+</div>
+
 <div id="confirm-overlay" class="modal-overlay is-hidden">
   <div class="card modal-card">
     <h3 id="confirm-titulo">Confirmar ação</h3>
@@ -979,13 +994,13 @@ function renderizarSolicitacoesRecebidas(snap) {
       </div>
       <div class="solicitacao-acoes">
         <button type="button" class="btn btn-primary btn-sm" data-aceitar="${doc.id}">Aceitar</button>
-        <button type="button" class="btn btn-secundario btn-sm" data-recusar="${doc.id}">Recusar</button>
+        <button type="button" class="btn btn-secundario btn-sm" data-recusar="${doc.id}" data-nome="${escaparHTML(r.deUserNome)}">Recusar</button>
       </div>
       <p class="form-msg" id="solmsg-${doc.id}" role="alert" style="width:100%"></p>`;
     lista.appendChild(item);
   });
   lista.querySelectorAll("[data-aceitar]").forEach((btn) => btn.addEventListener("click", () => aceitarSolicitacao(btn.dataset.aceitar)));
-  lista.querySelectorAll("[data-recusar]").forEach((btn) => btn.addEventListener("click", () => recusarSolicitacao(btn.dataset.recusar)));
+  lista.querySelectorAll("[data-recusar]").forEach((btn) => btn.addEventListener("click", () => abrirModalRecusa(btn.dataset.recusar, btn.dataset.nome)));
 }
 
 function renderizarSolicitacoesEnviadas(snap) {
@@ -1011,6 +1026,7 @@ function renderizarSolicitacoesEnviadas(snap) {
         <span class="solicitacao-quando">${formatarDataBR(r.date)} · ${minutosParaLabel(r.startMinutes)}–${minutosParaLabel(r.startMinutes + PASSO_MIN)}</span>
         <p class="solicitacao-motivo">"${escaparHTML(r.motivo)}"</p>
         <span class="solicitacao-status ${statusClasse[r.status] || ""}">${statusLabel[r.status] || r.status}</span>
+        ${(r.status === "recusada" && r.motivoRecusa) ? `<p class="solicitacao-motivo">Motivo: "${escaparHTML(r.motivoRecusa)}"</p>` : ""}
       </div>
       ${(r.status === "concluida" || r.status === "recusada") ? `<button type="button" class="btn btn-ghost btn-sm" data-dismiss="${doc.id}">Ok, entendi</button>` : ""}`;
     lista.appendChild(item);
@@ -1091,18 +1107,62 @@ async function aceitarSolicitacao(id) {
   }
 }
 
-async function recusarSolicitacao(id) {
+async function recusarSolicitacao(id, motivoRecusa = "") {
   const msgEl = document.getElementById(`solmsg-${id}`);
   if (msgEl) { msgEl.className = "form-msg"; msgEl.textContent = "Processando..."; }
   try {
-    await db.collection("requests").doc(id).update({
+    const dados = {
       status: "recusada",
       respondidoEm: firebase.firestore.FieldValue.serverTimestamp()
-    });
+    };
+    if (motivoRecusa) dados.motivoRecusa = motivoRecusa;
+    await db.collection("requests").doc(id).update(dados);
   } catch (err) {
     if (msgEl) { msgEl.className = "form-msg is-erro"; msgEl.textContent = "Não foi possível recusar. Tente novamente."; }
+    throw err;
   }
 }
+
+let recusaAtual = null;
+const modalRecusaOverlay = document.getElementById("modal-recusa-overlay");
+const modalRecusaInfo = document.getElementById("modal-recusa-info");
+const modalRecusaMotivo = document.getElementById("modal-recusa-motivo");
+const modalRecusaMsg = document.getElementById("modal-recusa-msg");
+const btnModalRecusaEnviar = document.getElementById("modal-recusa-enviar");
+
+function abrirModalRecusa(id, deUserNome) {
+  recusaAtual = id;
+  modalRecusaInfo.textContent = `Você está recusando o pedido de ${deUserNome}. Se quiser, explique o motivo abaixo.`;
+  modalRecusaMotivo.value = "";
+  modalRecusaMsg.textContent = "";
+  modalRecusaMsg.className = "form-msg";
+  btnModalRecusaEnviar.disabled = false;
+  modalRecusaOverlay.classList.remove("is-hidden");
+  modalRecusaMotivo.focus();
+}
+function fecharModalRecusa() {
+  modalRecusaOverlay.classList.add("is-hidden");
+  recusaAtual = null;
+}
+document.getElementById("modal-recusa-cancelar").addEventListener("click", fecharModalRecusa);
+modalRecusaOverlay.addEventListener("click", (e) => { if (e.target === modalRecusaOverlay) fecharModalRecusa(); });
+
+btnModalRecusaEnviar.addEventListener("click", async () => {
+  if (!recusaAtual) return;
+  const id = recusaAtual;
+  const motivo = modalRecusaMotivo.value.trim();
+  btnModalRecusaEnviar.disabled = true;
+  modalRecusaMsg.className = "form-msg";
+  modalRecusaMsg.textContent = "Enviando...";
+  try {
+    await recusarSolicitacao(id, motivo);
+    fecharModalRecusa();
+  } catch (err) {
+    modalRecusaMsg.className = "form-msg is-erro";
+    modalRecusaMsg.textContent = err.message || "Não foi possível recusar. Tente novamente.";
+    btnModalRecusaEnviar.disabled = false;
+  }
+});
 </script>
 </body>
 </html>
