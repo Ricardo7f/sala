@@ -112,15 +112,14 @@ button:disabled { cursor: not-allowed; }
 .checkin-status.is-aguardando { font-weight: 500; }
 .checkin-status.is-ok { color: var(--livre); }
 .checkin-status.is-erro { color: var(--ocupado); }
-.checkin-status.is-qr { color: var(--ink-soft); }
-.modal-qr-card { max-width: 340px; text-align: center; }
-.qr-imagem-wrap { display: flex; justify-content: center; margin: 4px 0 14px; }
-.qr-imagem-wrap img { width: 260px; height: 260px; border-radius: 10px; border: 1px solid var(--border); background: #fff; }
+.btn-checkin { border: none; background: var(--accent); color: #fff; font-weight: 600; font-size: 0.78rem; padding: 7px 14px; border-radius: 999px; box-shadow: 0 2px 8px rgba(79,70,229,0.28); }
+.btn-checkin:hover:not(:disabled) { background: #423AD1; }
+.btn-checkin:disabled { opacity: 0.6; }
 
 .cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; gap: 10px; }
 .cal-titulo { font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; margin: 0; min-width: 0; overflow-wrap: break-word; }
 .cal-header .btn-ghost { width: 34px; height: 34px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; border-radius: 999px; }
-.cal-legenda { display: flex; align-items: center; gap: 16px; font-size: 0.78rem; color: var(--ink-soft); margin: 10px 0 16px; }
+.cal-legenda { display: flex; gap: 16px; font-size: 0.78rem; color: var(--ink-soft); margin: 10px 0 16px; }
 .cal-legenda span { display: flex; align-items: center; gap: 6px; }
 .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
 .dot-livre { background: var(--livre); }
@@ -252,7 +251,6 @@ button:disabled { cursor: not-allowed; }
     <div class="topbar-brand"><span class="pin-dot"></span><span>Sala de Reunião</span></div>
     <div class="topbar-user">
       <span id="user-nome">—</span>
-      <button id="btn-qr-checkin" class="btn btn-ghost" title="Gerar QR code de check-in para colar na porta da sala">QR check-in</button>
       <button id="btn-sair" class="btn btn-ghost">Sair</button>
     </div>
   </header>
@@ -343,16 +341,6 @@ button:disabled { cursor: not-allowed; }
   </div>
 </div>
 
-<div id="modal-qr-overlay" class="modal-overlay is-hidden">
-  <div class="card modal-card modal-qr-card">
-    <div class="qr-imagem-wrap"><img id="qr-checkin-img" alt="QR code de check-in" width="260" height="260" /></div>
-    <div class="modal-actions">
-      <button type="button" id="qr-checkin-copiar" class="btn btn-ghost">Copiar link</button>
-      <button type="button" id="qr-checkin-fechar" class="btn btn-primary">Fechar</button>
-    </div>
-  </div>
-</div>
-
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -400,7 +388,6 @@ function resetarFormularioAuth() {
 function mostrarTelaDashboard() { telaDashboard.classList.remove("is-hidden"); telaAuth.classList.add("is-hidden"); }
 
 let usuarioAtual = null;
-let intervaloLiberacaoAutomatica = null;
 
 auth.onAuthStateChanged((user) => {
   if (user) {
@@ -409,16 +396,9 @@ auth.onAuthStateChanged((user) => {
     calendarioCache = { mesChave: null, ocupacaoPorDia: {} };
     document.getElementById("user-nome").textContent = user.displayName || user.email;
     mostrarTelaDashboard();
-    carregarMinhaReserva().then(() => processarCheckinPendente());
+    carregarMinhaReserva();
     renderizarCalendario();
     iniciarEscutaSolicitacoes();
-    if (!intervaloLiberacaoAutomatica) {
-      intervaloLiberacaoAutomatica = setInterval(() => {
-        if (!usuarioAtual || document.visibilityState !== "visible") return;
-        liberarReservasExpiradas(ultimoSnapCalendarioDocs);
-        carregarMinhaReserva();
-      }, 60000);
-    }
   } else {
     usuarioAtual = null;
     invalidarCacheReservas();
@@ -428,35 +408,10 @@ auth.onAuthStateChanged((user) => {
     pararEscutaDia();
     diaSelecionado = null;
     slotsCard.classList.add("is-hidden");
-    if (intervaloLiberacaoAutomatica) { clearInterval(intervaloLiberacaoAutomatica); intervaloLiberacaoAutomatica = null; }
     mostrarTelaAuth();
   }
 });
 document.getElementById("btn-sair").addEventListener("click", () => auth.signOut());
-
-// --- Modal de geração do QR code de check-in ---
-const modalQrOverlay = document.getElementById("modal-qr-overlay");
-document.getElementById("btn-qr-checkin").addEventListener("click", () => {
-  const link = linkCheckinQr();
-  const img = document.getElementById("qr-checkin-img");
-  img.src = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(link)}`;
-  modalQrOverlay.classList.remove("is-hidden");
-});
-function fecharModalQr() { modalQrOverlay.classList.add("is-hidden"); }
-document.getElementById("qr-checkin-fechar").addEventListener("click", fecharModalQr);
-modalQrOverlay.addEventListener("click", (e) => { if (e.target === modalQrOverlay) fecharModalQr(); });
-document.getElementById("qr-checkin-copiar").addEventListener("click", async () => {
-  const link = linkCheckinQr();
-  try {
-    await navigator.clipboard.writeText(link);
-    const btn = document.getElementById("qr-checkin-copiar");
-    const original = btn.textContent;
-    btn.textContent = "Copiado!";
-    setTimeout(() => { btn.textContent = original; }, 1500);
-  } catch (e) {
-    alert(link);
-  }
-});
 
 const tabLogin = document.getElementById("tab-login");
 const tabCadastro = document.getElementById("tab-cadastro");
@@ -558,7 +513,6 @@ function invalidarCacheReservas() { minhasReservasCache = null; }
 
 let calendarioCache = { mesChave: null, ocupacaoPorDia: {} };
 let unsubCalendario = null;
-let ultimoSnapCalendarioDocs = [];
 function chaveDoMes(date) { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`; }
 function pararEscutaCalendario() {
   if (unsubCalendario) unsubCalendario();
@@ -580,22 +534,11 @@ const NOMES_MES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho"
 
 const LIMITE_DIAS_RESERVADOS = 3;
 
-// --- Check-in por QR code + localização ---
-// Geolocalização sozinha (via navegador) não é confiável o suficiente em
-// desktop (erro de várias centenas de metros ou mais). Por isso a prova de
-// presença combina duas coisas:
-// 1) Escanear o QR code fixado na porta da sala com a câmera do celular
-//    (abre esta mesma página com ?checkin=<token> na URL) — isso já exige
-//    estar fisicamente diante da porta;
-// 2) Confirmar com o GPS do celular (bem mais preciso que o de um PC) que a
-//    localização no momento do scan está mesmo perto da sala.
-// Só quando as duas condições batem o check-in é confirmado.
-const CHECKIN_JANELA_MIN = 60;     // check-in libera X minutos antes do início
-const CHECKIN_QR_PARAM = "checkin";
-const CHECKIN_QR_TOKEN = "sala-reuniao-presenca"; // troque por um valor único se quiser gerar um novo QR
-const SALA_LAT = -10.919539;   // troque pela latitude real da sala
-const SALA_LNG = -37.664218;   // troque pela longitude real da sala
+// --- Check-in por localização ---
+const SALA_LAT = -10.919539;
+const SALA_LNG = -37.664218;
 const CHECKIN_RAIO_METROS = 120;   // tolerância de precisão do GPS
+const CHECKIN_JANELA_MIN = 60;     // check-in libera X minutos antes do início
 
 function formatarHoraLocal(date) {
   return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
@@ -610,167 +553,11 @@ function distanciaMetros(lat1, lng1, lat2, lng2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-function obterLocalizacaoAtual() {
-  return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) { reject({ code: "sem-suporte" }); return; }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => resolve(pos.coords),
-      (err) => reject(err),
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-    );
-  });
-}
-
-function linkCheckinQr() {
-  const url = new URL(location.origin + location.pathname);
-  url.searchParams.set(CHECKIN_QR_PARAM, CHECKIN_QR_TOKEN);
-  return url.toString();
-}
-
-// Guarda (e limpa da URL) um token de check-in vindo de ?checkin=..., caso a
-// página tenha sido aberta escaneando o QR code. Roda assim que o script
-// carrega, antes mesmo do login terminar, para não perder o parâmetro.
-(function capturarCheckinDaUrl() {
-  try {
-    const params = new URLSearchParams(location.search);
-    const token = params.get(CHECKIN_QR_PARAM);
-    if (!token) return;
-    sessionStorage.setItem("checkinPendente", token);
-    params.delete(CHECKIN_QR_PARAM);
-    const resto = params.toString();
-    const novaUrl = location.pathname + (resto ? `?${resto}` : "") + location.hash;
-    history.replaceState({}, "", novaUrl);
-  } catch (e) { /* sessionStorage indisponível: apenas ignora */ }
-})();
-
-// Confirma o check-in de um grupo de horários, registrando também a
-// localização usada para validar a proximidade da sala.
-async function confirmarCheckinGrupo(dia, ini, fim, coords, dist) {
-  const snap = await db.collection("bookings")
-    .where("date", "==", dia)
-    .where("userId", "==", usuarioAtual.uid)
-    .where("startMinutes", ">=", ini)
-    .where("startMinutes", "<", fim)
-    .get();
-  const batch = db.batch();
-  snap.docs.forEach((doc) => {
-    batch.update(doc.ref, {
-      checkinStatus: "confirmado",
-      checkinEm: firebase.firestore.FieldValue.serverTimestamp(),
-      checkinVia: "qr",
-      checkinLat: coords.latitude,
-      checkinLng: coords.longitude,
-      checkinDistanciaM: Math.round(dist)
-    });
-  });
-  await batch.commit();
-}
-
-// Processa um token de check-in pendente (guardado ao escanear o QR code).
-// Se houver reserva de hoje dentro da janela de check-in, pede a localização
-// do celular e só confirma se ela estiver perto o suficiente da sala.
-async function processarCheckinPendente() {
-  const token = sessionStorage.getItem("checkinPendente");
-  if (!token) return;
-  sessionStorage.removeItem("checkinPendente");
-
-  if (token !== CHECKIN_QR_TOKEN) {
-    alert("Esse QR code de check-in não é válido.");
-    return;
-  }
-
-  const hoje = hojeChave();
-  const agora = new Date();
-  const minhas = await buscarReservasDoUsuario();
-  const reservasHoje = minhas.filter(r => r.date === hoje).sort((a, b) => a.startMinutes - b.startMinutes);
-  if (reservasHoje.length === 0) {
-    alert("Você não tem nenhuma reserva para hoje nessa sala.");
-    return;
-  }
-
-  const grupos = agruparBlocos(reservasHoje.map(r => r.startMinutes));
-  const candidatos = grupos.filter(([ini]) => {
-    const repDoc = reservasHoje.find(r => r.startMinutes === ini);
-    if (repDoc && repDoc.checkinStatus === "confirmado") return false;
-    const inicioDate = new Date(`${hoje}T${minutosParaLabel(ini)}:00`);
-    const janelaAbre = new Date(inicioDate.getTime() - CHECKIN_JANELA_MIN * 60000);
-    return agora >= janelaAbre && agora < inicioDate;
-  });
-
-  if (candidatos.length === 0) {
-    alert("Nenhum check-in disponível agora. Verifique se o horário da sua reserva já está dentro da janela de check-in.");
-    return;
-  }
-
-  let coords;
-  try {
-    coords = await obterLocalizacaoAtual();
-  } catch (err) {
-    let msg = "Não foi possível obter sua localização para confirmar o check-in. Escaneie o QR code novamente.";
-    if (err && err.code === 1) msg = "Permissão de localização negada. Ative-a e escaneie o QR code novamente.";
-    else if (err && err.code === 3) msg = "Tempo esgotado ao obter localização. Escaneie o QR code novamente.";
-    else if (err && err.code === "sem-suporte") msg = "Seu celular/navegador não suporta localização, então não é possível confirmar o check-in.";
-    alert(msg);
-    return;
-  }
-
-  const dist = distanciaMetros(coords.latitude, coords.longitude, SALA_LAT, SALA_LNG);
-  if (dist > CHECKIN_RAIO_METROS) {
-    alert(`Você está a aproximadamente ${Math.round(dist)}m da sala, então o check-in foi bloqueado. Aproxime-se e escaneie o QR code novamente.`);
-    return;
-  }
-
-  for (const [ini, fim] of candidatos) {
-    await confirmarCheckinGrupo(hoje, ini, fim, coords, dist);
-  }
-  invalidarCacheReservas();
-  await carregarMinhaReserva();
-  alert(candidatos.length === 1 ? "Check-in confirmado! Presença registrada." : "Check-in confirmado para seus horários de hoje!");
-}
-
 async function buscarReservasDoUsuario() {
   if (minhasReservasCache) return minhasReservasCache;
   const snap = await db.collection("bookings").where("userId", "==", usuarioAtual.uid).get();
   minhasReservasCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   return minhasReservasCache;
-}
-
-// Libera (exclui) blocos de reserva de HOJE cujo check-in não foi feito até o horário de início.
-// Recebe uma lista de docs de "bookings" (com id) de um ou mais usuários.
-async function liberarReservasExpiradas(docs) {
-  if (!docs || docs.length === 0) return false;
-  const agora = new Date();
-  const hoje = hojeChave();
-  const porUsuarioDia = {};
-  docs.forEach((r) => {
-    if (r.date !== hoje) return;
-    const chave = `${r.date}|${r.userId}`;
-    (porUsuarioDia[chave] = porUsuarioDia[chave] || []).push(r);
-  });
-
-  const idsParaExcluir = [];
-  Object.values(porUsuarioDia).forEach((lista) => {
-    lista.sort((a, b) => a.startMinutes - b.startMinutes);
-    const grupos = agruparBlocos(lista.map(r => r.startMinutes));
-    grupos.forEach(([ini, fim]) => {
-      const doGrupo = lista.filter(r => r.startMinutes >= ini && r.startMinutes < fim);
-      const jaConfirmado = doGrupo.some(r => r.checkinStatus === "confirmado");
-      if (jaConfirmado) return;
-      const inicioDate = new Date(`${hoje}T${minutosParaLabel(ini)}:00`);
-      if (agora >= inicioDate) doGrupo.forEach(r => idsParaExcluir.push(r.id));
-    });
-  });
-
-  if (idsParaExcluir.length === 0) return false;
-  try {
-    const batch = db.batch();
-    idsParaExcluir.forEach(id => batch.delete(db.collection("bookings").doc(id)));
-    await batch.commit();
-    return true;
-  } catch (err) {
-    console.warn("Não foi possível liberar automaticamente reservas sem check-in (verifique as regras de segurança do Firestore):", err);
-    return false;
-  }
 }
 
 async function obterDiasReservados() {
@@ -801,12 +588,7 @@ function agruparBlocos(minutosOrdenados) {
 
 async function carregarMinhaReserva() {
   const box = document.getElementById("minha-reserva");
-  let minhas = await buscarReservasDoUsuario();
-  const liberou = await liberarReservasExpiradas(minhas);
-  if (liberou) {
-    invalidarCacheReservas();
-    minhas = await buscarReservasDoUsuario();
-  }
+  const minhas = await buscarReservasDoUsuario();
   const dias = await obterDiasReservados();
   if (dias.length === 0) {
     box.innerHTML = `<p class="minha-reserva-vazia">Você ainda não tem nenhuma sala marcada. Escolha um dia no calendário abaixo.</p>`;
@@ -827,24 +609,20 @@ async function carregarMinhaReserva() {
       checkinsHtml = grupos.map(([ini, fim]) => {
         const repDoc = reservasDoDia.find(r => r.startMinutes === ini);
         const inicioDate = new Date(`${dia}T${minutosParaLabel(ini)}:00`);
+        const fimDate = new Date(`${dia}T${minutosParaLabel(fim)}:00`);
         const janelaAbre = new Date(inicioDate.getTime() - CHECKIN_JANELA_MIN * 60000);
         const label = `${minutosParaLabel(ini)}–${minutosParaLabel(fim)}`;
         const jaConfirmado = repDoc && repDoc.checkinStatus === "confirmado";
 
-        // A janela de check-in vai de "janelaAbre" até "inicioDate": a reserva
-        // é liberada automaticamente (liberarReservasExpiradas) no exato
-        // horário de início caso não tenha sido confirmada, então depois
-        // disso não faz sentido oferecer o botão — a sala já pode ter sido
-        // repassada a outra pessoa.
         let statusHtml;
         if (jaConfirmado) {
           statusHtml = `<span class="checkin-status is-ok">✓ Check-in feito</span>`;
         } else if (agora < janelaAbre) {
           statusHtml = `<span class="checkin-status is-aguardando">Check-in libera às ${formatarHoraLocal(janelaAbre)}</span>`;
-        } else if (agora >= inicioDate) {
+        } else if (agora >= fimDate) {
           statusHtml = `<span class="checkin-status is-erro">Check-in não realizado</span>`;
         } else {
-          statusHtml = `<span class="checkin-status is-qr">📷 Escaneie o QR code na porta da sala para confirmar presença (o app vai pedir sua localização)</span>`;
+          statusHtml = `<button type="button" class="btn-checkin" data-checkin-dia="${dia}" data-checkin-ini="${ini}" data-checkin-fim="${fim}">Fazer check-in</button><span class="checkin-status"></span>`;
         }
 
         return `<div class="checkin-item"><span class="checkin-horario">${label}</span>${statusHtml}</div>`;
@@ -872,6 +650,70 @@ async function carregarMinhaReserva() {
   box.querySelectorAll("[data-cancelar-dia]").forEach((btn) => {
     btn.addEventListener("click", () => cancelarReservasDoDia(btn.dataset.cancelarDia));
   });
+  box.querySelectorAll("[data-checkin-ini]").forEach((btn) => {
+    btn.addEventListener("click", () => fazerCheckin(btn.dataset.checkinDia, Number(btn.dataset.checkinIni), Number(btn.dataset.checkinFim), btn));
+  });
+}
+
+async function fazerCheckin(dia, ini, fim, btn) {
+  const msgEl = btn.nextElementSibling;
+  const setMsg = (texto, tipo) => { if (msgEl) { msgEl.textContent = texto; msgEl.className = "checkin-status" + (tipo ? ` is-${tipo}` : ""); } };
+
+  if (!navigator.geolocation) {
+    setMsg("Seu navegador não suporta localização. Não é possível fazer check-in.", "erro");
+    return;
+  }
+
+  const textoOriginal = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "Localizando...";
+  setMsg("", "");
+
+  navigator.geolocation.getCurrentPosition(async (pos) => {
+    const { latitude, longitude } = pos.coords;
+    const dist = distanciaMetros(latitude, longitude, SALA_LAT, SALA_LNG);
+
+    if (dist > CHECKIN_RAIO_METROS) {
+      btn.disabled = false;
+      btn.textContent = textoOriginal;
+      setMsg(`Você está a ${Math.round(dist)}m da sala. Aproxime-se e tente de novo.`, "erro");
+      return;
+    }
+
+    try {
+      const snap = await db.collection("bookings")
+        .where("date", "==", dia)
+        .where("userId", "==", usuarioAtual.uid)
+        .where("startMinutes", ">=", ini)
+        .where("startMinutes", "<", fim)
+        .get();
+      const batch = db.batch();
+      snap.docs.forEach((doc) => {
+        batch.update(doc.ref, {
+          checkinStatus: "confirmado",
+          checkinEm: firebase.firestore.FieldValue.serverTimestamp(),
+          checkinLat: latitude,
+          checkinLng: longitude,
+          checkinDistanciaM: Math.round(dist)
+        });
+      });
+      await batch.commit();
+      invalidarCacheReservas();
+      await carregarMinhaReserva();
+    } catch (err) {
+      console.error("Erro ao salvar check-in:", err);
+      btn.disabled = false;
+      btn.textContent = textoOriginal;
+      setMsg("Não foi possível salvar o check-in. Tente novamente.", "erro");
+    }
+  }, (err) => {
+    btn.disabled = false;
+    btn.textContent = textoOriginal;
+    let msg = "Não foi possível obter sua localização.";
+    if (err.code === err.PERMISSION_DENIED) msg = "Permissão de localização negada. Ative-a para fazer check-in.";
+    if (err.code === err.TIMEOUT) msg = "Tempo esgotado ao obter localização. Tente novamente.";
+    setMsg(msg, "erro");
+  }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
 }
 
 async function cancelarHorarioIndividual(chaveData, startMinutes) {
@@ -932,20 +774,13 @@ function renderizarCalendario() {
     .where("date", ">=", chaveInicio)
     .where("date", "<=", chaveFim)
     .onSnapshot((snap) => {
-      const docsComId = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       const ocupacaoPorDia = {};
-      docsComId.forEach((data) => {
+      snap.docs.forEach((doc) => {
+        const data = doc.data();
         ocupacaoPorDia[data.date] = (ocupacaoPorDia[data.date] || 0) + 1;
       });
       calendarioCache = { mesChave: mesChaveAtual, ocupacaoPorDia };
       desenharGradeCalendario(primeiroDia, ultimoDia);
-      ultimoSnapCalendarioDocs = docsComId;
-      // Observação: a limpeza de reservas expiradas NÃO roda mais aqui.
-      // Antes ela rodava a cada atualização deste listener, em todo cliente
-      // conectado — e como ela mesma pode apagar documentos, cada exclusão
-      // reacionava o listener de todo mundo de novo (efeito cascata de
-      // leituras/escritas). Agora a limpeza roda só no intervalo de 60s
-      // (uma vez, não por cliente-evento) e no listener do dia aberto.
     }, (err) => console.error("Erro ao ouvir o calendário:", err));
 }
 
@@ -1013,15 +848,13 @@ async function abrirDia(chave) {
   pararEscutaDia();
   unsubDiaAtual = db.collection("bookings").where("date", "==", chave)
     .onSnapshot(async (snap) => {
-      const docsComId = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      horariosOcupadosDoDia = docsComId.map(d => d.startMinutes);
-      meusBlocosDoDia = docsComId.filter(d => d.userId === usuarioAtual.uid).map(d => d.startMinutes);
+      horariosOcupadosDoDia = snap.docs.map(d => d.data().startMinutes);
+      meusBlocosDoDia = snap.docs.filter(d => d.data().userId === usuarioAtual.uid).map(d => d.data().startMinutes);
       ocupacaoDetalhe = {};
-      docsComId.forEach((data) => {
+      snap.docs.forEach(d => {
+        const data = d.data();
         ocupacaoDetalhe[data.startMinutes] = { userNome: data.userNome || data.userEmail, userEmail: data.userEmail, userId: data.userId };
       });
-
-      if (chave === hojeChave()) await liberarReservasExpiradas(docsComId);
 
       const podeReservar = await podeReservarNoDia(chave);
       const bloqueadoPorLimite = !podeReservar;
