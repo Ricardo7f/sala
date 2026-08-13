@@ -862,11 +862,32 @@ async function abrirDia(chave) {
     }, (err) => console.error("Erro ao ouvir horários do dia:", err));
 }
 
+// Retorna true se o horário [m, m+PASSO_MIN) do dia "chave" já passou
+// (ou seja, chave é hoje e o horário de término já é <= agora).
+function horarioJaPassou(chave, m) {
+  if (chave !== hojeChave()) return false;
+  const agora = new Date();
+  const minutosAgora = agora.getHours() * 60 + agora.getMinutes();
+  return (m + PASSO_MIN) <= minutosAgora;
+}
+
 function renderizarSlots(bloqueadoPorLimite) {
   slotsGrid.innerHTML = "";
   for (let m = HORARIO_INICIO_MIN; m < HORARIO_FIM_MIN; m += PASSO_MIN) {
     const ocupado = horariosOcupadosDoDia.includes(m);
     const meu = meusBlocosDoDia.includes(m);
+    const passou = horarioJaPassou(diaSelecionado, m);
+
+    if (passou && !meu) {
+      const div = document.createElement("div");
+      div.className = "slot slot-ocupado";
+      div.dataset.min = m;
+      div.innerHTML = `
+        <span class="slot-hora">${minutosParaLabel(m)}–${minutosParaLabel(m + PASSO_MIN)}</span>
+        <span class="slot-status">horário já passou</span>`;
+      slotsGrid.appendChild(div);
+      continue;
+    }
 
     if (ocupado && !meu) {
       const detalhe = ocupacaoDetalhe[m];
@@ -952,6 +973,11 @@ btnConfirmar.addEventListener("click", async () => {
   slotsMsg.textContent = "Confirmando...";
 
   try {
+    const jaPassou = horariosSelecionados.filter(m => horarioJaPassou(diaSelecionado, m));
+    if (jaPassou.length > 0) {
+      throw new Error(`O horário ${minutosParaLabel(jaPassou[0])} já passou. Atualize a tela e escolha outro horário.`);
+    }
+
     const podeReservar = await podeReservarNoDia(diaSelecionado);
     if (!podeReservar) {
       throw new Error(`Você já atingiu o limite de ${LIMITE_DIAS_RESERVADOS} dias reservados. Cancele algum deles para marcar este dia.`);
