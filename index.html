@@ -83,27 +83,44 @@ button:disabled { cursor: not-allowed; }
 .cal-slots-row { display: flex; flex-direction: column; gap: 16px; }
 
 @media (min-width: 900px) {
-  .dash-wrap { max-width: 1120px; }
+  .dash-wrap { max-width: 1120px; padding-bottom: 80px; }
+  .cal-slots-sticky-wrap { position: sticky; top: 128px; }
   .cal-slots-row { display: grid; grid-template-columns: minmax(300px, 400px) minmax(0, 1fr); align-items: start; gap: 20px; }
-  .cal-slots-row .calendario-card { position: sticky; top: 88px; min-width: 0; }
-  .cal-slots-row .slots-card { position: sticky; top: 88px; max-height: calc(100vh - 108px); display: flex; flex-direction: column; min-width: 0; scroll-margin-top: 100px; }
+  .cal-slots-row .calendario-card { min-width: 0; max-height: calc(100vh - 168px); overflow-y: auto; }
+  .cal-slots-row .slots-card { max-height: calc(100vh - 168px); display: flex; flex-direction: column; min-width: 0; scroll-margin-top: 100px; }
   .slots-grid { flex: 1 1 auto; min-height: 0; max-height: none; }
 }
 
 
 .minha-reserva-vazia { margin: 0; color: var(--ink-soft); }
-.reserva-atual { padding-bottom: 16px; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
-.reserva-atual:last-of-type { padding-bottom: 0; margin-bottom: 0; border-bottom: none; }
-.reserva-atual-info { display: flex; flex-direction: column; gap: 3px; }
-.reserva-atual-label { font-family: var(--font-body); font-weight: 700; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); }
-.reserva-atual-data { font-family: var(--font-display); font-weight: 700; font-size: 1.4rem; }
-.reserva-atual-horarios { font-family: var(--font-mono); color: var(--ink-soft); font-size: 0.88rem; }
-.reserva-atual-aviso { font-size: 0.85rem; color: var(--ink-soft); margin: 12px 0 0; }
+.minha-reserva-label { font-family: var(--font-body); font-weight: 700; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); display: block; margin-bottom: 10px; }
+.reserva-lista { display: flex; flex-direction: column; }
+.reserva-atual { display: flex; flex-direction: column; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.reserva-atual:last-of-type { padding-bottom: 0; border-bottom: none; }
+.reserva-atual-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.reserva-atual-info { display: flex; align-items: baseline; gap: 10px; min-width: 0; flex-wrap: wrap; }
+.reserva-atual-data { font-family: var(--font-display); font-weight: 700; font-size: 0.98rem; white-space: nowrap; }
+.reserva-atual-horarios { font-family: var(--font-mono); color: var(--ink-soft); font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; }
+.reserva-atual-aviso { font-size: 0.8rem; color: var(--ink-soft); margin: 12px 0 0; }
+.btn-cancelar-dia { flex-shrink: 0; width: 30px; height: 30px; border-radius: 999px; border: none; background: var(--ocupado-bg); color: var(--ocupado); font-size: 1rem; line-height: 1; display: flex; align-items: center; justify-content: center; padding: 0; transition: background-color .12s ease, transform .1s ease; }
+.btn-cancelar-dia:hover { background: #FCE1E1; }
+.btn-cancelar-dia:active { transform: scale(0.94); }
+.reserva-checkins { display: flex; flex-direction: column; gap: 8px; background: var(--bg); border-radius: 10px; padding: 10px 12px; }
+.checkin-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.checkin-horario { font-family: var(--font-mono); font-size: 0.78rem; color: var(--ink-soft); }
+.checkin-status { font-size: 0.76rem; font-weight: 600; color: var(--ink-soft); }
+.checkin-status.is-aguardando { font-weight: 500; }
+.checkin-status.is-ok { color: var(--livre); }
+.checkin-status.is-erro { color: var(--ocupado); }
+.checkin-status.is-qr { color: var(--ink-soft); }
+.modal-qr-card { max-width: 340px; text-align: center; }
+.qr-imagem-wrap { display: flex; justify-content: center; margin: 4px 0 14px; }
+.qr-imagem-wrap img { width: 260px; height: 260px; border-radius: 10px; border: 1px solid var(--border); background: #fff; }
 
 .cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; gap: 10px; }
 .cal-titulo { font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; margin: 0; min-width: 0; overflow-wrap: break-word; }
 .cal-header .btn-ghost { width: 34px; height: 34px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; border-radius: 999px; }
-.cal-legenda { display: flex; gap: 16px; font-size: 0.78rem; color: var(--ink-soft); margin: 10px 0 16px; }
+.cal-legenda { display: flex; align-items: center; gap: 16px; font-size: 0.78rem; color: var(--ink-soft); margin: 10px 0 16px; }
 .cal-legenda span { display: flex; align-items: center; gap: 6px; }
 .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
 .dot-livre { background: var(--livre); }
@@ -235,6 +252,7 @@ button:disabled { cursor: not-allowed; }
     <div class="topbar-brand"><span class="pin-dot"></span><span>Sala de Reunião</span></div>
     <div class="topbar-user">
       <span id="user-nome">—</span>
+      <button id="btn-qr-checkin" class="btn btn-ghost" title="Gerar QR code de check-in para colar na porta da sala">QR check-in</button>
       <button id="btn-sair" class="btn btn-ghost">Sair</button>
     </div>
   </header>
@@ -252,6 +270,7 @@ button:disabled { cursor: not-allowed; }
       <div id="solicitacoes-enviadas-lista"></div>
     </section>
 
+    <div class="cal-slots-sticky-wrap">
     <div class="cal-slots-row">
       <section class="card calendario-card">
         <div class="cal-header">
@@ -278,6 +297,7 @@ button:disabled { cursor: not-allowed; }
         <button id="btn-confirmar" class="btn btn-primary" disabled>Confirmar reserva</button>
         <p class="form-msg" id="slots-msg" role="alert"></p>
       </section>
+    </div>
     </div>
   </main>
 </div>
@@ -319,6 +339,16 @@ button:disabled { cursor: not-allowed; }
     <div class="modal-actions">
       <button type="button" id="confirm-cancelar" class="btn btn-ghost">Cancelar</button>
       <button type="button" id="confirm-confirmar" class="btn btn-secundario">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div id="modal-qr-overlay" class="modal-overlay is-hidden">
+  <div class="card modal-card modal-qr-card">
+    <div class="qr-imagem-wrap"><img id="qr-checkin-img" alt="QR code de check-in" width="260" height="260" /></div>
+    <div class="modal-actions">
+      <button type="button" id="qr-checkin-copiar" class="btn btn-ghost">Copiar link</button>
+      <button type="button" id="qr-checkin-fechar" class="btn btn-primary">Fechar</button>
     </div>
   </div>
 </div>
@@ -370,6 +400,7 @@ function resetarFormularioAuth() {
 function mostrarTelaDashboard() { telaDashboard.classList.remove("is-hidden"); telaAuth.classList.add("is-hidden"); }
 
 let usuarioAtual = null;
+let intervaloLiberacaoAutomatica = null;
 
 auth.onAuthStateChanged((user) => {
   if (user) {
@@ -378,9 +409,16 @@ auth.onAuthStateChanged((user) => {
     calendarioCache = { mesChave: null, ocupacaoPorDia: {} };
     document.getElementById("user-nome").textContent = user.displayName || user.email;
     mostrarTelaDashboard();
-    carregarMinhaReserva();
+    carregarMinhaReserva().then(() => processarCheckinPendente());
     renderizarCalendario();
     iniciarEscutaSolicitacoes();
+    if (!intervaloLiberacaoAutomatica) {
+      intervaloLiberacaoAutomatica = setInterval(() => {
+        if (!usuarioAtual || document.visibilityState !== "visible") return;
+        liberarReservasExpiradas(ultimoSnapCalendarioDocs);
+        carregarMinhaReserva();
+      }, 60000);
+    }
   } else {
     usuarioAtual = null;
     invalidarCacheReservas();
@@ -390,10 +428,35 @@ auth.onAuthStateChanged((user) => {
     pararEscutaDia();
     diaSelecionado = null;
     slotsCard.classList.add("is-hidden");
+    if (intervaloLiberacaoAutomatica) { clearInterval(intervaloLiberacaoAutomatica); intervaloLiberacaoAutomatica = null; }
     mostrarTelaAuth();
   }
 });
 document.getElementById("btn-sair").addEventListener("click", () => auth.signOut());
+
+// --- Modal de geração do QR code de check-in ---
+const modalQrOverlay = document.getElementById("modal-qr-overlay");
+document.getElementById("btn-qr-checkin").addEventListener("click", () => {
+  const link = linkCheckinQr();
+  const img = document.getElementById("qr-checkin-img");
+  img.src = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(link)}`;
+  modalQrOverlay.classList.remove("is-hidden");
+});
+function fecharModalQr() { modalQrOverlay.classList.add("is-hidden"); }
+document.getElementById("qr-checkin-fechar").addEventListener("click", fecharModalQr);
+modalQrOverlay.addEventListener("click", (e) => { if (e.target === modalQrOverlay) fecharModalQr(); });
+document.getElementById("qr-checkin-copiar").addEventListener("click", async () => {
+  const link = linkCheckinQr();
+  try {
+    await navigator.clipboard.writeText(link);
+    const btn = document.getElementById("qr-checkin-copiar");
+    const original = btn.textContent;
+    btn.textContent = "Copiado!";
+    setTimeout(() => { btn.textContent = original; }, 1500);
+  } catch (e) {
+    alert(link);
+  }
+});
 
 const tabLogin = document.getElementById("tab-login");
 const tabCadastro = document.getElementById("tab-cadastro");
@@ -495,6 +558,7 @@ function invalidarCacheReservas() { minhasReservasCache = null; }
 
 let calendarioCache = { mesChave: null, ocupacaoPorDia: {} };
 let unsubCalendario = null;
+let ultimoSnapCalendarioDocs = [];
 function chaveDoMes(date) { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`; }
 function pararEscutaCalendario() {
   if (unsubCalendario) unsubCalendario();
@@ -516,11 +580,197 @@ const NOMES_MES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho"
 
 const LIMITE_DIAS_RESERVADOS = 3;
 
+// --- Check-in por QR code + localização ---
+// Geolocalização sozinha (via navegador) não é confiável o suficiente em
+// desktop (erro de várias centenas de metros ou mais). Por isso a prova de
+// presença combina duas coisas:
+// 1) Escanear o QR code fixado na porta da sala com a câmera do celular
+//    (abre esta mesma página com ?checkin=<token> na URL) — isso já exige
+//    estar fisicamente diante da porta;
+// 2) Confirmar com o GPS do celular (bem mais preciso que o de um PC) que a
+//    localização no momento do scan está mesmo perto da sala.
+// Só quando as duas condições batem o check-in é confirmado.
+const CHECKIN_JANELA_MIN = 60;     // check-in libera X minutos antes do início
+const CHECKIN_QR_PARAM = "checkin";
+const CHECKIN_QR_TOKEN = "sala-reuniao-presenca"; // troque por um valor único se quiser gerar um novo QR
+const SALA_LAT = -10.919539;   // troque pela latitude real da sala
+const SALA_LNG = -37.664218;   // troque pela longitude real da sala
+const CHECKIN_RAIO_METROS = 120;   // tolerância de precisão do GPS
+
+function formatarHoraLocal(date) {
+  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+}
+
+function distanciaMetros(lat1, lng1, lat2, lng2) {
+  const R = 6371000;
+  const rad = Math.PI / 180;
+  const dLat = (lat2 - lat1) * rad;
+  const dLng = (lng2 - lng1) * rad;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function obterLocalizacaoAtual() {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) { reject({ code: "sem-suporte" }); return; }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve(pos.coords),
+      (err) => reject(err),
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
+  });
+}
+
+function linkCheckinQr() {
+  const url = new URL(location.origin + location.pathname);
+  url.searchParams.set(CHECKIN_QR_PARAM, CHECKIN_QR_TOKEN);
+  return url.toString();
+}
+
+// Guarda (e limpa da URL) um token de check-in vindo de ?checkin=..., caso a
+// página tenha sido aberta escaneando o QR code. Roda assim que o script
+// carrega, antes mesmo do login terminar, para não perder o parâmetro.
+(function capturarCheckinDaUrl() {
+  try {
+    const params = new URLSearchParams(location.search);
+    const token = params.get(CHECKIN_QR_PARAM);
+    if (!token) return;
+    sessionStorage.setItem("checkinPendente", token);
+    params.delete(CHECKIN_QR_PARAM);
+    const resto = params.toString();
+    const novaUrl = location.pathname + (resto ? `?${resto}` : "") + location.hash;
+    history.replaceState({}, "", novaUrl);
+  } catch (e) { /* sessionStorage indisponível: apenas ignora */ }
+})();
+
+// Confirma o check-in de um grupo de horários, registrando também a
+// localização usada para validar a proximidade da sala.
+async function confirmarCheckinGrupo(dia, ini, fim, coords, dist) {
+  const snap = await db.collection("bookings")
+    .where("date", "==", dia)
+    .where("userId", "==", usuarioAtual.uid)
+    .where("startMinutes", ">=", ini)
+    .where("startMinutes", "<", fim)
+    .get();
+  const batch = db.batch();
+  snap.docs.forEach((doc) => {
+    batch.update(doc.ref, {
+      checkinStatus: "confirmado",
+      checkinEm: firebase.firestore.FieldValue.serverTimestamp(),
+      checkinVia: "qr",
+      checkinLat: coords.latitude,
+      checkinLng: coords.longitude,
+      checkinDistanciaM: Math.round(dist)
+    });
+  });
+  await batch.commit();
+}
+
+// Processa um token de check-in pendente (guardado ao escanear o QR code).
+// Se houver reserva de hoje dentro da janela de check-in, pede a localização
+// do celular e só confirma se ela estiver perto o suficiente da sala.
+async function processarCheckinPendente() {
+  const token = sessionStorage.getItem("checkinPendente");
+  if (!token) return;
+  sessionStorage.removeItem("checkinPendente");
+
+  if (token !== CHECKIN_QR_TOKEN) {
+    alert("Esse QR code de check-in não é válido.");
+    return;
+  }
+
+  const hoje = hojeChave();
+  const agora = new Date();
+  const minhas = await buscarReservasDoUsuario();
+  const reservasHoje = minhas.filter(r => r.date === hoje).sort((a, b) => a.startMinutes - b.startMinutes);
+  if (reservasHoje.length === 0) {
+    alert("Você não tem nenhuma reserva para hoje nessa sala.");
+    return;
+  }
+
+  const grupos = agruparBlocos(reservasHoje.map(r => r.startMinutes));
+  const candidatos = grupos.filter(([ini]) => {
+    const repDoc = reservasHoje.find(r => r.startMinutes === ini);
+    if (repDoc && repDoc.checkinStatus === "confirmado") return false;
+    const inicioDate = new Date(`${hoje}T${minutosParaLabel(ini)}:00`);
+    const janelaAbre = new Date(inicioDate.getTime() - CHECKIN_JANELA_MIN * 60000);
+    return agora >= janelaAbre && agora < inicioDate;
+  });
+
+  if (candidatos.length === 0) {
+    alert("Nenhum check-in disponível agora. Verifique se o horário da sua reserva já está dentro da janela de check-in.");
+    return;
+  }
+
+  let coords;
+  try {
+    coords = await obterLocalizacaoAtual();
+  } catch (err) {
+    let msg = "Não foi possível obter sua localização para confirmar o check-in. Escaneie o QR code novamente.";
+    if (err && err.code === 1) msg = "Permissão de localização negada. Ative-a e escaneie o QR code novamente.";
+    else if (err && err.code === 3) msg = "Tempo esgotado ao obter localização. Escaneie o QR code novamente.";
+    else if (err && err.code === "sem-suporte") msg = "Seu celular/navegador não suporta localização, então não é possível confirmar o check-in.";
+    alert(msg);
+    return;
+  }
+
+  const dist = distanciaMetros(coords.latitude, coords.longitude, SALA_LAT, SALA_LNG);
+  if (dist > CHECKIN_RAIO_METROS) {
+    alert(`Você está a aproximadamente ${Math.round(dist)}m da sala, então o check-in foi bloqueado. Aproxime-se e escaneie o QR code novamente.`);
+    return;
+  }
+
+  for (const [ini, fim] of candidatos) {
+    await confirmarCheckinGrupo(hoje, ini, fim, coords, dist);
+  }
+  invalidarCacheReservas();
+  await carregarMinhaReserva();
+  alert(candidatos.length === 1 ? "Check-in confirmado! Presença registrada." : "Check-in confirmado para seus horários de hoje!");
+}
+
 async function buscarReservasDoUsuario() {
   if (minhasReservasCache) return minhasReservasCache;
   const snap = await db.collection("bookings").where("userId", "==", usuarioAtual.uid).get();
-  minhasReservasCache = snap.docs.map(d => d.data());
+  minhasReservasCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   return minhasReservasCache;
+}
+
+// Libera (exclui) blocos de reserva de HOJE cujo check-in não foi feito até o horário de início.
+// Recebe uma lista de docs de "bookings" (com id) de um ou mais usuários.
+async function liberarReservasExpiradas(docs) {
+  if (!docs || docs.length === 0) return false;
+  const agora = new Date();
+  const hoje = hojeChave();
+  const porUsuarioDia = {};
+  docs.forEach((r) => {
+    if (r.date !== hoje) return;
+    const chave = `${r.date}|${r.userId}`;
+    (porUsuarioDia[chave] = porUsuarioDia[chave] || []).push(r);
+  });
+
+  const idsParaExcluir = [];
+  Object.values(porUsuarioDia).forEach((lista) => {
+    lista.sort((a, b) => a.startMinutes - b.startMinutes);
+    const grupos = agruparBlocos(lista.map(r => r.startMinutes));
+    grupos.forEach(([ini, fim]) => {
+      const doGrupo = lista.filter(r => r.startMinutes >= ini && r.startMinutes < fim);
+      const jaConfirmado = doGrupo.some(r => r.checkinStatus === "confirmado");
+      if (jaConfirmado) return;
+      const inicioDate = new Date(`${hoje}T${minutosParaLabel(ini)}:00`);
+      if (agora >= inicioDate) doGrupo.forEach(r => idsParaExcluir.push(r.id));
+    });
+  });
+
+  if (idsParaExcluir.length === 0) return false;
+  try {
+    const batch = db.batch();
+    idsParaExcluir.forEach(id => batch.delete(db.collection("bookings").doc(id)));
+    await batch.commit();
+    return true;
+  } catch (err) {
+    console.warn("Não foi possível liberar automaticamente reservas sem check-in (verifique as regras de segurança do Firestore):", err);
+    return false;
+  }
 }
 
 async function obterDiasReservados() {
@@ -551,25 +801,66 @@ function agruparBlocos(minutosOrdenados) {
 
 async function carregarMinhaReserva() {
   const box = document.getElementById("minha-reserva");
-  const minhas = await buscarReservasDoUsuario();
+  let minhas = await buscarReservasDoUsuario();
+  const liberou = await liberarReservasExpiradas(minhas);
+  if (liberou) {
+    invalidarCacheReservas();
+    minhas = await buscarReservasDoUsuario();
+  }
   const dias = await obterDiasReservados();
   if (dias.length === 0) {
     box.innerHTML = `<p class="minha-reserva-vazia">Você ainda não tem nenhuma sala marcada. Escolha um dia no calendário abaixo.</p>`;
     return;
   }
 
+  const agora = new Date();
+  const hoje = hojeChave();
+
   const cardsHtml = dias.map((dia) => {
-    const horariosDoDia = minhas.filter(r => r.date === dia).map(r => r.startMinutes).sort((a, b) => a - b);
+    const reservasDoDia = minhas.filter(r => r.date === dia).sort((a, b) => a.startMinutes - b.startMinutes);
+    const horariosDoDia = reservasDoDia.map(r => r.startMinutes);
     const grupos = agruparBlocos(horariosDoDia);
     const horariosTxt = grupos.map(([ini, fim]) => `${minutosParaLabel(ini)}–${minutosParaLabel(fim)}`).join(", ");
+
+    let checkinsHtml = "";
+    if (dia === hoje) {
+      checkinsHtml = grupos.map(([ini, fim]) => {
+        const repDoc = reservasDoDia.find(r => r.startMinutes === ini);
+        const inicioDate = new Date(`${dia}T${minutosParaLabel(ini)}:00`);
+        const janelaAbre = new Date(inicioDate.getTime() - CHECKIN_JANELA_MIN * 60000);
+        const label = `${minutosParaLabel(ini)}–${minutosParaLabel(fim)}`;
+        const jaConfirmado = repDoc && repDoc.checkinStatus === "confirmado";
+
+        // A janela de check-in vai de "janelaAbre" até "inicioDate": a reserva
+        // é liberada automaticamente (liberarReservasExpiradas) no exato
+        // horário de início caso não tenha sido confirmada, então depois
+        // disso não faz sentido oferecer o botão — a sala já pode ter sido
+        // repassada a outra pessoa.
+        let statusHtml;
+        if (jaConfirmado) {
+          statusHtml = `<span class="checkin-status is-ok">✓ Check-in feito</span>`;
+        } else if (agora < janelaAbre) {
+          statusHtml = `<span class="checkin-status is-aguardando">Check-in libera às ${formatarHoraLocal(janelaAbre)}</span>`;
+        } else if (agora >= inicioDate) {
+          statusHtml = `<span class="checkin-status is-erro">Check-in não realizado</span>`;
+        } else {
+          statusHtml = `<span class="checkin-status is-qr">📷 Escaneie o QR code na porta da sala para confirmar presença (o app vai pedir sua localização)</span>`;
+        }
+
+        return `<div class="checkin-item"><span class="checkin-horario">${label}</span>${statusHtml}</div>`;
+      }).join("");
+    }
+
     return `
       <div class="reserva-atual">
-        <div class="reserva-atual-info">
-          <span class="reserva-atual-label">Sala reservada</span>
-          <span class="reserva-atual-data">${formatarDataBR(dia)}</span>
-          <span class="reserva-atual-horarios">${horariosTxt}</span>
+        <div class="reserva-atual-top">
+          <div class="reserva-atual-info">
+            <span class="reserva-atual-data">${formatarDataBR(dia)}</span>
+            <span class="reserva-atual-horarios">${horariosTxt}</span>
+          </div>
+          <button class="btn-cancelar-dia" data-cancelar-dia="${dia}" title="Cancelar todas as reservas deste dia" aria-label="Cancelar todas as reservas deste dia">✕</button>
         </div>
-        <button class="btn btn-secundario" data-cancelar-dia="${dia}">Cancelar todas as reservas deste dia</button>
+        ${checkinsHtml ? `<div class="reserva-checkins">${checkinsHtml}</div>` : ""}
       </div>`;
   }).join("");
 
@@ -577,7 +868,7 @@ async function carregarMinhaReserva() {
     ? `Você atingiu o limite de ${LIMITE_DIAS_RESERVADOS} dias reservados. Cancele um deles ou espere um passar para marcar outro dia.`
     : `Você pode reservar até ${LIMITE_DIAS_RESERVADOS} dias diferentes ao mesmo tempo (já usou ${dias.length} de ${LIMITE_DIAS_RESERVADOS}).`;
 
-  box.innerHTML = `${cardsHtml}<p class="reserva-atual-aviso">${avisoLimite}</p>`;
+  box.innerHTML = `<span class="minha-reserva-label">Salas reservadas</span><div class="reserva-lista">${cardsHtml}</div><p class="reserva-atual-aviso">${avisoLimite}</p>`;
   box.querySelectorAll("[data-cancelar-dia]").forEach((btn) => {
     btn.addEventListener("click", () => cancelarReservasDoDia(btn.dataset.cancelarDia));
   });
@@ -641,13 +932,20 @@ function renderizarCalendario() {
     .where("date", ">=", chaveInicio)
     .where("date", "<=", chaveFim)
     .onSnapshot((snap) => {
+      const docsComId = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       const ocupacaoPorDia = {};
-      snap.docs.forEach((doc) => {
-        const data = doc.data();
+      docsComId.forEach((data) => {
         ocupacaoPorDia[data.date] = (ocupacaoPorDia[data.date] || 0) + 1;
       });
       calendarioCache = { mesChave: mesChaveAtual, ocupacaoPorDia };
       desenharGradeCalendario(primeiroDia, ultimoDia);
+      ultimoSnapCalendarioDocs = docsComId;
+      // Observação: a limpeza de reservas expiradas NÃO roda mais aqui.
+      // Antes ela rodava a cada atualização deste listener, em todo cliente
+      // conectado — e como ela mesma pode apagar documentos, cada exclusão
+      // reacionava o listener de todo mundo de novo (efeito cascata de
+      // leituras/escritas). Agora a limpeza roda só no intervalo de 60s
+      // (uma vez, não por cliente-evento) e no listener do dia aberto.
     }, (err) => console.error("Erro ao ouvir o calendário:", err));
 }
 
@@ -715,13 +1013,15 @@ async function abrirDia(chave) {
   pararEscutaDia();
   unsubDiaAtual = db.collection("bookings").where("date", "==", chave)
     .onSnapshot(async (snap) => {
-      horariosOcupadosDoDia = snap.docs.map(d => d.data().startMinutes);
-      meusBlocosDoDia = snap.docs.filter(d => d.data().userId === usuarioAtual.uid).map(d => d.data().startMinutes);
+      const docsComId = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      horariosOcupadosDoDia = docsComId.map(d => d.startMinutes);
+      meusBlocosDoDia = docsComId.filter(d => d.userId === usuarioAtual.uid).map(d => d.startMinutes);
       ocupacaoDetalhe = {};
-      snap.docs.forEach(d => {
-        const data = d.data();
+      docsComId.forEach((data) => {
         ocupacaoDetalhe[data.startMinutes] = { userNome: data.userNome || data.userEmail, userEmail: data.userEmail, userId: data.userId };
       });
+
+      if (chave === hojeChave()) await liberarReservasExpiradas(docsComId);
 
       const podeReservar = await podeReservarNoDia(chave);
       const bloqueadoPorLimite = !podeReservar;
