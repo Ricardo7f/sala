@@ -667,6 +667,11 @@ async function carregarMinhaReserva() {
       }).join("");
     }
 
+    const existeHorarioFuturo = grupos.some(([, fim]) => !horarioJaPassou(dia, fim - PASSO_MIN));
+    const botaoCancelarDiaHtml = existeHorarioFuturo
+      ? `<button class="btn-cancelar-dia" data-cancelar-dia="${dia}" title="Cancelar todas as reservas deste dia" aria-label="Cancelar todas as reservas deste dia">✕</button>`
+      : "";
+
     return `
       <div class="reserva-atual">
         <div class="reserva-atual-top">
@@ -674,7 +679,7 @@ async function carregarMinhaReserva() {
             <span class="reserva-atual-data">${formatarDataBR(dia)}</span>
             <span class="reserva-atual-horarios">${horariosTxt}</span>
           </div>
-          <button class="btn-cancelar-dia" data-cancelar-dia="${dia}" title="Cancelar todas as reservas deste dia" aria-label="Cancelar todas as reservas deste dia">✕</button>
+          ${botaoCancelarDiaHtml}
         </div>
         ${checkinsHtml ? `<div class="reserva-checkins">${checkinsHtml}</div>` : ""}
       </div>`;
@@ -756,6 +761,12 @@ async function fazerCheckin(dia, ini, fim, btn) {
 
 async function cancelarHorarioIndividual(chaveData, startMinutes) {
   const label = `${minutosParaLabel(startMinutes)}–${minutosParaLabel(startMinutes + PASSO_MIN)}`;
+
+  if (horarioJaPassou(chaveData, startMinutes)) {
+    alert(`O horário ${label} já passou e não pode mais ser cancelado. Ele permanece registrado.`);
+    return;
+  }
+
   const ok = await confirmarAcao(`Cancelar o horário de ${label} do dia ${formatarDataBR(chaveData)}?`, "Cancelar horário");
   if (!ok) return;
   try {
@@ -775,10 +786,26 @@ async function cancelarReservasDoDia(chaveData) {
     const snap = await db.collection("bookings").where("userId", "==", usuarioAtual.uid).where("date", "==", chaveData).get();
     if (snap.empty) {
       console.warn("Nenhuma reserva encontrada para cancelar em", chaveData, "com userId", usuarioAtual.uid);
+      return;
     }
+
+    // Horários que já passaram nunca são apagados: ficam gravados
+    // permanentemente (nome, e-mail, check-in) e não podem mais ser cancelados.
+    const docsCancelaveis = snap.docs.filter(doc => !horarioJaPassou(chaveData, doc.data().startMinutes));
+
+    if (docsCancelaveis.length === 0) {
+      alert("Todos os horários deste dia já passaram e não podem mais ser cancelados.");
+      return;
+    }
+
     const batch = db.batch();
-    snap.docs.forEach(doc => batch.delete(doc.ref));
+    docsCancelaveis.forEach(doc => batch.delete(doc.ref));
     await batch.commit();
+
+    if (docsCancelaveis.length < snap.docs.length) {
+      alert("Os horários que já passaram não foram cancelados, pois ficam registrados permanentemente. Apenas os horários futuros deste dia foram removidos.");
+    }
+
     invalidarCacheReservas();
     await carregarMinhaReserva();
   } catch (err) {
@@ -940,7 +967,7 @@ function renderizarSlots(bloqueadoPorLimite) {
           <span class="slot-status">${escaparHTML(nomeDono)}</span>
           ${emailDono ? `<span class="slot-email">${escaparHTML(emailDono)}</span>` : ""}
         </span>
-        ${(bloqueadoPorLimite || !detalhe) ? "" : `<button type="button" class="btn-pedir" data-pedir="${m}">pedir esse horário</button>`}`;
+        ${(passou || bloqueadoPorLimite || !detalhe) ? "" : `<button type="button" class="btn-pedir" data-pedir="${m}">pedir esse horário</button>`}`;
       slotsGrid.appendChild(div);
       continue;
     }
@@ -951,8 +978,8 @@ function renderizarSlots(bloqueadoPorLimite) {
       div.dataset.min = m;
       div.innerHTML = `
         <span class="slot-hora">${minutosParaLabel(m)}–${minutosParaLabel(m + PASSO_MIN)}</span>
-        <span class="slot-status">sua reserva</span>
-        <button type="button" class="btn-pedir btn-cancelar-slot" data-cancelar-meu="${m}">cancelar este horário</button>`;
+        <span class="slot-status">${passou ? "sua reserva (encerrada)" : "sua reserva"}</span>
+        ${passou ? "" : `<button type="button" class="btn-pedir btn-cancelar-slot" data-cancelar-meu="${m}">cancelar este horário</button>`}`;
       slotsGrid.appendChild(div);
       continue;
     }
