@@ -399,6 +399,9 @@ auth.onAuthStateChanged((user) => {
     carregarMinhaReserva();
     renderizarCalendario();
     iniciarEscutaSolicitacoes();
+    if (precisaLimparMesAnterior()) {
+      limparReservasDeMesesAnteriores();
+    }
   } else {
     usuarioAtual = null;
     invalidarCacheReservas();
@@ -514,6 +517,41 @@ function invalidarCacheReservas() { minhasReservasCache = null; }
 let calendarioCache = { mesChave: null, ocupacaoPorDia: {} };
 let unsubCalendario = null;
 function chaveDoMes(date) { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`; }
+
+// --- Limpeza automática de reservas de meses anteriores ---
+// Mantém tudo gravado durante o mês corrente (inclusive horários já passados,
+// para saber quem reservou o quê). Quando o mês vira, os registros de
+// bookings com data anterior ao dia 1 do mês atual são apagados.
+const CHAVE_ULTIMA_LIMPEZA = "salaReuniao_ultimaLimpezaMes";
+function precisaLimparMesAnterior() {
+  try {
+    return localStorage.getItem(CHAVE_ULTIMA_LIMPEZA) !== chaveDoMes(new Date());
+  } catch (e) {
+    return true;
+  }
+}
+function marcarLimpezaFeita() {
+  try { localStorage.setItem(CHAVE_ULTIMA_LIMPEZA, chaveDoMes(new Date())); } catch (e) {}
+}
+async function limparReservasDeMesesAnteriores() {
+  try {
+    const hoje = new Date();
+    const primeiroDiaMesAtual = paraChaveData(new Date(hoje.getFullYear(), hoje.getMonth(), 1));
+    const snap = await db.collection("bookings").where("date", "<", primeiroDiaMesAtual).get();
+    if (snap.empty) { marcarLimpezaFeita(); return; }
+    const docs = snap.docs;
+    for (let i = 0; i < docs.length; i += 450) {
+      const lote = docs.slice(i, i + 450);
+      const batch = db.batch();
+      lote.forEach((doc) => batch.delete(doc.ref));
+      await batch.commit();
+    }
+    console.log(`Limpeza mensal: ${docs.length} reserva(s) de meses anteriores removida(s).`);
+    marcarLimpezaFeita();
+  } catch (err) {
+    console.error("Erro ao limpar reservas de meses anteriores:", err);
+  }
+}
 function pararEscutaCalendario() {
   if (unsubCalendario) unsubCalendario();
   unsubCalendario = null;
@@ -878,7 +916,7 @@ function renderizarSlots(bloqueadoPorLimite) {
     const meu = meusBlocosDoDia.includes(m);
     const passou = horarioJaPassou(diaSelecionado, m);
 
-    if (passou && !meu) {
+    if (passou && !ocupado) {
       const div = document.createElement("div");
       div.className = "slot slot-ocupado";
       div.dataset.min = m;
