@@ -577,9 +577,40 @@ const SALA_LAT = -10.919539;
 const SALA_LNG = -37.664218;
 const CHECKIN_RAIO_METROS = 120;   // tolerância de precisão do GPS
 const CHECKIN_JANELA_MIN = 60;     // check-in libera X minutos antes do início
+const CHECKIN_LIMITE_MIN = 10;     // se não fizer check-in até X minutos após o início, a sala é liberada
 
 function formatarHoraLocal(date) {
   return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+}
+
+// Retorna a data/hora limite para o check-in de uma reserva.
+// Normalmente é início do horário + CHECKIN_LIMITE_MIN. Mas se a reserva foi
+// feita depois do início do horário (ex: você pegou a sala já em andamento,
+// às 9:33 num horário de 9-10), o prazo passa a contar a partir do momento
+// da própria reserva: reservou às 9:33 → check-in até 9:43.
+function limiteCheckinDate(dia, startMinutes, criadoEm) {
+  const inicioDate = new Date(`${dia}T${minutosParaLabel(startMinutes)}:00`);
+  let base = inicioDate;
+  if (criadoEm) {
+    const criadoDate = typeof criadoEm.toDate === "function" ? criadoEm.toDate() : new Date(criadoEm);
+    if (criadoDate > base) base = criadoDate;
+  } else {
+    // criadoEm ainda sincronizando (serverTimestamp pendente, gravação local
+    // recém-feita): trata como "agora" para não expirar uma reserva recém-criada.
+    base = new Date();
+  }
+  const d = new Date(base.getTime());
+  d.setMinutes(d.getMinutes() + CHECKIN_LIMITE_MIN);
+  return d;
+}
+
+// Uma reserva é considerada "expirada" (sala liberada) quando:
+// - é hoje, já passou o prazo de check-in (ver limiteCheckinDate), e
+// - o check-in não foi confirmado.
+function checkinExpirado(booking, dia) {
+  if (dia !== hojeChave()) return false;
+  if (booking.checkinStatus === "confirmado") return false;
+  return new Date() >= limiteCheckinDate(dia, booking.startMinutes, booking.criadoEm);
 }
 
 function distanciaMetros(lat1, lng1, lat2, lng2) {
@@ -647,8 +678,8 @@ async function carregarMinhaReserva() {
       checkinsHtml = grupos.map(([ini, fim]) => {
         const repDoc = reservasDoDia.find(r => r.startMinutes === ini);
         const inicioDate = new Date(`${dia}T${minutosParaLabel(ini)}:00`);
-        const fimDate = new Date(`${dia}T${minutosParaLabel(fim)}:00`);
         const janelaAbre = new Date(inicioDate.getTime() - CHECKIN_JANELA_MIN * 60000);
+        const limiteCheckin = limiteCheckinDate(dia, ini, repDoc && repDoc.criadoEm);
         const label = `${minutosParaLabel(ini)}–${minutosParaLabel(fim)}`;
         const jaConfirmado = repDoc && repDoc.checkinStatus === "confirmado";
 
@@ -657,10 +688,10 @@ async function carregarMinhaReserva() {
           statusHtml = `<span class="checkin-status is-ok">✓ Check-in feito</span>`;
         } else if (agora < janelaAbre) {
           statusHtml = `<span class="checkin-status is-aguardando">Check-in libera às ${formatarHoraLocal(janelaAbre)}</span>`;
-        } else if (agora >= fimDate) {
-          statusHtml = `<span class="checkin-status is-erro">Check-in não realizado</span>`;
+        } else if (agora >= limiteCheckin) {
+          statusHtml = `<span class="checkin-status is-erro">Sala liberada — check-in não feito até ${formatarHoraLocal(limiteCheckin)}</span>`;
         } else {
-          statusHtml = `<button type="button" class="btn-checkin" data-checkin-dia="${dia}" data-checkin-ini="${ini}" data-checkin-fim="${fim}">Fazer check-in</button><span class="checkin-status"></span>`;
+          statusHtml = `<button type="button" class="btn-checkin" data-checkin-dia="${dia}" data-checkin-ini="${ini}" data-checkin-fim="${fim}">Fazer check-in até ${formatarHoraLocal(limiteCheckin)}</button><span class="checkin-status"></span>`;
         }
 
         return `<div class="checkin-item"><span class="checkin-horario">${label}</span>${statusHtml}</div>`;
@@ -913,10 +944,13 @@ async function abrirDia(chave) {
   pararEscutaDia();
   unsubDiaAtual = db.collection("bookings").where("date", "==", chave)
     .onSnapshot(async (snap) => {
-      horariosOcupadosDoDia = snap.docs.map(d => d.data().startMinutes);
-      meusBlocosDoDia = snap.docs.filter(d => d.data().userId === usuarioAtual.uid).map(d => d.data().startMinutes);
+      // Reservas cujo check-in não foi feito até 10 min após o início não contam
+      // mais como ocupadas: a sala volta a aparecer livre para qualquer pessoa.
+      const docsValidos = snap.docs.filter(d => !checkinExpirado(d.data(), chave));
+      horariosOcupadosDoDia = docsValidos.map(d => d.data().startMinutes);
+      meusBlocosDoDia = docsValidos.filter(d => d.data().userId === usuarioAtual.uid).map(d => d.data().startMinutes);
       ocupacaoDetalhe = {};
-      snap.docs.forEach(d => {
+      docsValidos.forEach(d => {
         const data = d.data();
         ocupacaoDetalhe[data.startMinutes] = { userNome: data.userNome || data.userEmail, userEmail: data.userEmail, userId: data.userId };
       });
@@ -1052,7 +1086,11 @@ btnConfirmar.addEventListener("click", async () => {
       const refs = horariosSelecionados.map(m => db.collection("bookings").doc(`${diaSelecionado}_${m}`));
       const snaps = await Promise.all(refs.map(ref => tx.get(ref)));
       snaps.forEach((snap, i) => {
-        if (snap.exists) throw new Error(`O horário ${minutosParaLabel(horariosSelecionados[i])} acabou de ser reservado por outra pessoa. Escolha outro.`);
+        if (snap.exists && !checkinExpirado(snap.data(), diaSelecionado)) {
+          throw new Error(`O horário ${minutosParaLabel(horariosSelecionados[i])} acabou de ser reservado por outra pessoa. Escolha outro.`);
+        }
+        // Se existir mas o check-in expirou (10 min sem check-in), a sala foi
+        // liberada automaticamente e pode ser sobrescrita pela nova reserva.
       });
       refs.forEach((ref, i) => {
         tx.set(ref, {
