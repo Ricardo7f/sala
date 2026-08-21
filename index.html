@@ -135,7 +135,7 @@ button:disabled { cursor: not-allowed; }
 .cal-dia.status-parcial .cal-dia-gauge { background: var(--parcial); }
 .cal-dia.status-cheio .cal-dia-gauge { background: var(--ocupado); }
 .cal-dia.status-cheio { color: var(--ocupado); }
-.cal-dia.is-passado { opacity: 0.3; }
+.cal-dia.is-passado { opacity: 0.55; }
 .cal-dia.is-hoje { border-color: var(--accent); border-width: 2px; }
 .cal-dia:disabled { cursor: not-allowed; }
 .cal-dia:not(:disabled):hover { border-color: var(--accent); transform: translateY(-1px); }
@@ -910,7 +910,8 @@ function criarCelulaDia(numero, chave, status, isPassado) {
   el.className = `cal-dia status-${status}`;
   if (isPassado) el.classList.add("is-passado");
   if (chave === hojeChave()) el.classList.add("is-hoje");
-  el.disabled = isPassado;
+  // Dias passados continuam clicáveis (só não é mais possível reservar
+  // neles) para dar para ver quem reservou cada horário.
   el.innerHTML = `<span class="cal-dia-num">${numero}</span><span class="cal-dia-gauge"></span>`;
   el.addEventListener("click", () => abrirDia(chave));
   return el;
@@ -961,9 +962,11 @@ async function abrirDia(chave) {
     }, (err) => console.error("Erro ao ouvir horários do dia:", err));
 }
 
-// Retorna true se o horário [m, m+PASSO_MIN) do dia "chave" já passou
-// (ou seja, chave é hoje e o horário de término já é <= agora).
+// Retorna true se o horário [m, m+PASSO_MIN) do dia "chave" já passou:
+// - qualquer horário de um dia inteiramente no passado; ou
+// - hoje, se o horário de término já é <= agora.
 function horarioJaPassou(chave, m) {
+  if (chave < hojeChave()) return true;
   if (chave !== hojeChave()) return false;
   const agora = new Date();
   const minutosAgora = agora.getHours() * 60 + agora.getMinutes();
